@@ -1,0 +1,307 @@
+:root {
+  --bg: #141311;
+  --panel: #1d1a16;
+  --panel-raised: #232019;
+  --track: #2c2820;
+  --line: #3a352c;
+  --cream: #ede6d6;
+  --muted: #a89d89;
+  --amber: #e8a33d;
+  --crimson: #d4364b;
+  --cobalt: #4f8fc4;
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-body: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--cream);
+  font-family: var(--font-body);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px; height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+/* ---------- Masthead ---------- */
+
+.masthead {
+  padding: 2.5rem 1.5rem 1.25rem;
+  border-bottom: 1px solid var(--line);
+  text-align: center;
+}
+
+.masthead-mark {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-optical-sizing: auto;
+  font-size: clamp(2.4rem, 6vw, 3.6rem);
+  letter-spacing: 0.02em;
+  color: var(--cream);
+}
+
+.masthead-tag {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-style: italic;
+  font-family: var(--font-display);
+}
+
+/* ---------- Layout ---------- */
+
+.deck {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 3rem;
+}
+
+.search-strip {
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+
+#game-search {
+  width: 100%;
+  padding: 0.9rem 1rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--cream);
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  border-radius: 3px;
+}
+
+#game-search:focus {
+  outline: 2px solid var(--cobalt);
+  outline-offset: 1px;
+}
+
+.search-status {
+  display: block;
+  margin-top: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-family: var(--font-mono);
+}
+
+.intro {
+  color: var(--muted);
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  line-height: 1.6;
+  max-width: 46ch;
+  margin: 3rem auto;
+  text-align: center;
+}
+
+/* ---------- Console ---------- */
+
+.console {
+  display: grid;
+  grid-template-columns: minmax(220px, 320px) 1fr;
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+}
+
+@media (max-width: 720px) {
+  .console { grid-template-columns: 1fr; }
+}
+
+.console-panel {
+  background: var(--panel);
+  padding: 1.5rem;
+}
+
+.panel-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.3rem;
+  margin: 0 0 0.25rem;
+  color: var(--cream);
+}
+
+.panel-sub {
+  margin: 0 0 1.25rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+/* ---------- Channel faders ---------- */
+
+.channels {
+  display: flex;
+  gap: 1.25rem;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.channel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  background: var(--panel-raised);
+  padding: 0.9rem 0.7rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  width: 74px;
+}
+
+.channel-weight {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  color: var(--amber);
+  min-height: 1.2em;
+}
+
+.channel-fader {
+  writing-mode: vertical-lr;
+  direction: rtl;
+  width: 28px;
+  height: 130px;
+  accent-color: var(--amber);
+  background: var(--track);
+  cursor: pointer;
+}
+
+.channel-label {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.03em;
+  color: var(--muted);
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.channel.is-muted .channel-label { color: #5a5548; }
+.channel.is-muted .channel-weight { color: #5a5548; }
+
+/* ---------- Gauge ---------- */
+
+.gauge-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem 0 0.5rem;
+}
+
+.gauge {
+  width: 100%;
+  max-width: 300px;
+}
+
+.gauge-track {
+  fill: none;
+  stroke: var(--track);
+  stroke-width: 14;
+  stroke-linecap: round;
+}
+
+.gauge-fill {
+  fill: none;
+  stroke: var(--amber);
+  stroke-width: 14;
+  stroke-linecap: round;
+  stroke-dasharray: 314;
+  stroke-dashoffset: 314;
+  transition: stroke-dashoffset 0.4s ease, stroke 0.4s ease;
+}
+
+.gauge-needle {
+  stroke: var(--cream);
+  stroke-width: 3;
+  stroke-linecap: round;
+  transform-origin: 120px 130px;
+  transition: transform 0.4s ease;
+}
+
+.gauge-hub {
+  fill: var(--cream);
+}
+
+.gauge-value {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 2.6rem;
+  color: var(--cream);
+  margin-top: -1.6rem;
+}
+
+.gauge-caption {
+  font-size: 0.78rem;
+  color: var(--muted);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-top: 0.15rem;
+}
+
+/* ---------- Score chips ---------- */
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  justify-content: center;
+  margin-top: 1.5rem;
+}
+
+.chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.55rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--panel-raised);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.chip-source {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.chip-score {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 1.15rem;
+  color: var(--cobalt);
+}
+
+.chip.is-muted {
+  opacity: 0.35;
+  transform: scale(0.94);
+}
+
+.empty-hint {
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin-top: 1rem;
+  display: none;
+}
+
+/* ---------- Footer ---------- */
+
+.foot {
+  text-align: center;
+  padding: 1.5rem;
+  color: #5a5548;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+}

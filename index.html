@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Consola — tu redacción, tus pesos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-mark">CONSOLA</div>
+  <p class="masthead-tag">tu redacción, tus pesos — cada quien mezcla las notas en las que confía</p>
+</header>
+
+<main class="deck">
+
+  <section class="search-strip">
+    <label for="game-search" class="visually-hidden">Buscar juego</label>
+    <input
+      id="game-search"
+      type="text"
+      list="game-list"
+      placeholder="Busca un juego reseñado…"
+      autocomplete="off"
+    />
+    <datalist id="game-list"></datalist>
+    <span id="search-status" class="search-status"></span>
+  </section>
+
+  <section class="console" id="console" hidden>
+
+    <div class="console-panel channels-panel">
+      <h2 class="panel-title">Mesa de mezcla</h2>
+      <p class="panel-sub">Sube o baja cada canal para pesar más o menos esa prensa. 0 = silenciada.</p>
+      <div id="channels" class="channels"></div>
+    </div>
+
+    <div class="console-panel readout-panel">
+      <h2 class="panel-title" id="game-title">—</h2>
+      <div class="gauge-wrap">
+        <svg id="gauge" viewBox="0 0 240 150" class="gauge">
+          <path d="M 20 130 A 100 100 0 0 1 220 130" class="gauge-track" />
+          <path id="gauge-fill" d="M 20 130 A 100 100 0 0 1 220 130" class="gauge-fill" />
+          <line id="gauge-needle" x1="120" y1="130" x2="120" y2="40" class="gauge-needle" />
+          <circle cx="120" cy="130" r="7" class="gauge-hub" />
+        </svg>
+        <div class="gauge-value" id="gauge-value">—</div>
+        <div class="gauge-caption">nota ponderada</div>
+      </div>
+
+      <div id="chips" class="chips"></div>
+      <p id="empty-hint" class="empty-hint">Ningún canal activo — sube al menos un fader.</p>
+    </div>
+
+  </section>
+
+  <section class="intro" id="intro">
+    <p>Elige un juego para ver cómo lo calificaron las prensas de tu catálogo, y ajusta cuánto pesa cada una en tu nota final. Tus pesos se guardan en este navegador.</p>
+  </section>
+
+</main>
+
+<footer class="foot">
+  <span id="api-status"></span>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
