@@ -18,6 +18,12 @@
 
 <main class="deck">
 
+  <section class="console-panel channels-panel" id="channels-panel">
+    <h2 class="panel-title">Tus prensas</h2>
+    <p class="panel-sub" id="channels-sub">Elige qué reseñas quieres usar para calcular la nota — se guarda en tu perfil y se aplica cada vez que busques un juego.</p>
+    <div id="channels" class="press-grid"></div>
+  </section>
+
   <section class="search-strip">
     <label for="game-search" class="visually-hidden">Buscar juego</label>
     <input
@@ -31,35 +37,25 @@
     <span id="search-status" class="search-status"></span>
   </section>
 
-  <section class="console" id="console" hidden>
-
-    <div class="console-panel channels-panel">
-      <h2 class="panel-title">Mesa de mezcla</h2>
-      <p class="panel-sub">Sube o baja cada canal para pesar más o menos esa prensa. 0 = silenciada.</p>
-      <div id="channels" class="channels"></div>
+  <section class="console-panel readout-panel" id="console" hidden>
+    <h2 class="panel-title" id="game-title">—</h2>
+    <div class="gauge-wrap">
+      <svg id="gauge" viewBox="0 0 240 150" class="gauge">
+        <path d="M 20 130 A 100 100 0 0 1 220 130" class="gauge-track" />
+        <path id="gauge-fill" d="M 20 130 A 100 100 0 0 1 220 130" class="gauge-fill" />
+        <line id="gauge-needle" x1="120" y1="130" x2="120" y2="40" class="gauge-needle" />
+        <circle cx="120" cy="130" r="7" class="gauge-hub" />
+      </svg>
+      <div class="gauge-value" id="gauge-value">—</div>
+      <div class="gauge-caption">nota promedio</div>
     </div>
 
-    <div class="console-panel readout-panel">
-      <h2 class="panel-title" id="game-title">—</h2>
-      <div class="gauge-wrap">
-        <svg id="gauge" viewBox="0 0 240 150" class="gauge">
-          <path d="M 20 130 A 100 100 0 0 1 220 130" class="gauge-track" />
-          <path id="gauge-fill" d="M 20 130 A 100 100 0 0 1 220 130" class="gauge-fill" />
-          <line id="gauge-needle" x1="120" y1="130" x2="120" y2="40" class="gauge-needle" />
-          <circle cx="120" cy="130" r="7" class="gauge-hub" />
-        </svg>
-        <div class="gauge-value" id="gauge-value">—</div>
-        <div class="gauge-caption">nota ponderada</div>
-      </div>
-
-      <div id="chips" class="chips"></div>
-      <p id="empty-hint" class="empty-hint">Ningún canal activo — sube al menos un fader.</p>
-    </div>
-
+    <div id="chips" class="chips"></div>
+    <p id="empty-hint" class="empty-hint">Ninguna de tus prensas seleccionadas reseñó este juego todavía.</p>
   </section>
 
   <section class="intro" id="intro">
-    <p>Elige un juego para ver cómo lo calificaron las prensas de tu catálogo, y ajusta cuánto pesa cada una en tu nota final. Tus pesos se guardan en este navegador.</p>
+    <p>Elige tus prensas de confianza arriba y luego busca un juego para ver la nota calculada solo con esas reseñas.</p>
   </section>
 
 </main>

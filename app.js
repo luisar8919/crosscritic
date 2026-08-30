@@ -1,9 +1,14 @@
-// Si el frontend NO se despliega junto a la Function App como Azure Static
-// Web Apps "managed functions", cambia esto por la URL completa de tu
-// Function App, ej: "https://crosscritic-api.azurewebsites.net/api"
-const API_BASE = '/api';
+// La Function App está publicada como recurso aparte (no como "managed
+// functions" del Static Web App), así que apuntamos directo a su URL.
+// Requiere CORS habilitado ahí para el dominio del Static Web App
+// (ver README, sección 4).
+const API_BASE = 'https://crosscritic-fabhbkf7due8hqbc.eastus-01.azurewebsites.net/api';
 
-const STORAGE_KEY = 'crosscritic_weights_v1';
+// Perfil anónimo por dispositivo: un id generado una vez y guardado en este
+// navegador. Las preferencias (qué prensas usar) se guardan del lado del
+// servidor (Blob Storage) contra ese id, así que sobreviven a que se borre
+// el localStorage de la nota final, pero no cruzan de un navegador a otro.
+const PROFILE_ID_KEY = 'crosscritic_profile_id';
 
 const els = {
   search: document.getElementById('game-search'),
@@ -12,6 +17,7 @@ const els = {
   console: document.getElementById('console'),
   intro: document.getElementById('intro'),
   channels: document.getElementById('channels'),
+  channelsSub: document.getElementById('channels-sub'),
   gameTitle: document.getElementById('game-title'),
   gaugeFill: document.getElementById('gauge-fill'),
   gaugeNeedle: document.getElementById('gauge-needle'),
@@ -23,29 +29,38 @@ const els = {
 
 const GAUGE_ARC_LENGTH = 314; // aprox. longitud del semicírculo (π * r=100)
 
-let sources = [];       // catálogo: [{source_id, source_name}]
-let weights = {};        // preferencias del usuario: {source_id: number 0-2}
-let currentGame = null;  // último juego cargado desde la API
+let profileId = null;
+let sources = [];              // catálogo completo: [{source_id, source_name}]
+let selectedSources = new Set(); // prensas elegidas por el usuario (su perfil)
+let allGames = [];             // índice completo: [{game_id, game_title, sources}]
+let currentGame = null;        // último juego cargado desde la API
 
 init();
 
 async function init() {
-  loadWeights();
-  await Promise.all([loadSources(), loadGameIndex()]);
+  profileId = getOrCreateProfileId();
+
+  await loadSources();
+  const isNewProfile = await loadProfile();
+  await loadGameIndex();
+
+  if (isNewProfile) {
+    els.channelsSub.textContent =
+      '¡Bienvenido! Elige qué prensas quieres usar para calcular la nota — se guarda en tu perfil.';
+  }
+
+  renderChannels();
+  refreshSearchAvailability();
   els.search.addEventListener('change', onGameChosen);
 }
 
-function loadWeights() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    weights = raw ? JSON.parse(raw) : {};
-  } catch {
-    weights = {};
+function getOrCreateProfileId() {
+  let id = localStorage.getItem(PROFILE_ID_KEY);
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem(PROFILE_ID_KEY, id);
   }
-}
-
-function saveWeights() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(weights));
+  return id;
 }
 
 async function loadSources() {
@@ -53,9 +68,38 @@ async function loadSources() {
     const res = await fetch(`${API_BASE}/sources`);
     const data = await res.json();
     sources = data.sources || [];
-    renderChannels();
-  } catch (err) {
+  } catch {
     setApiStatus('No se pudo cargar el catálogo de prensas. ¿La API está desplegada?');
+  }
+}
+
+/** Devuelve true si el perfil no existía todavía (usuario nuevo). */
+async function loadProfile() {
+  try {
+    const res = await fetch(`${API_BASE}/profile/${profileId}`);
+    if (res.ok) {
+      const data = await res.json();
+      selectedSources = new Set(data.selected_sources || []);
+      return false;
+    }
+    selectedSources = new Set();
+    return true;
+  } catch {
+    selectedSources = new Set();
+    setApiStatus('No se pudo cargar tu perfil de preferencias.');
+    return false;
+  }
+}
+
+async function saveProfile() {
+  try {
+    await fetch(`${API_BASE}/profile/${profileId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ selected_sources: Array.from(selectedSources) }),
+    });
+  } catch {
+    setApiStatus('No se pudo guardar tu selección de prensas.');
   }
 }
 
@@ -63,19 +107,9 @@ async function loadGameIndex() {
   try {
     const res = await fetch(`${API_BASE}/games`);
     const data = await res.json();
-    els.gameList.innerHTML = '';
-    (data.games || [])
-      .sort((a, b) => a.game_title.localeCompare(b.game_title))
-      .forEach((g) => {
-        const opt = document.createElement('option');
-        opt.value = g.game_title;
-        opt.dataset.id = g.game_id;
-        els.gameList.appendChild(opt);
-      });
-    if (!data.games || data.games.length === 0) {
-      els.searchStatus.textContent = 'Todavía no hay reseñas cosechadas. Espera a que corra la ingesta o ejecútala manualmente.';
-    }
+    allGames = data.games || [];
   } catch {
+    allGames = [];
     setApiStatus('No se pudo cargar la lista de juegos.');
   }
 }
@@ -83,42 +117,62 @@ async function loadGameIndex() {
 function renderChannels() {
   els.channels.innerHTML = '';
   sources.forEach((source) => {
-    const weight = weights[source.source_id] ?? 1.0;
+    const isSelected = selectedSources.has(source.source_id);
 
-    const channel = document.createElement('div');
-    channel.className = 'channel';
-    channel.dataset.sourceId = source.source_id;
+    const item = document.createElement('label');
+    item.className = 'press-item' + (isSelected ? ' is-selected' : '');
 
-    const weightLabel = document.createElement('div');
-    weightLabel.className = 'channel-weight';
-    weightLabel.textContent = weight.toFixed(1);
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = isSelected;
+    checkbox.setAttribute('aria-label', source.source_name);
 
-    const fader = document.createElement('input');
-    fader.type = 'range';
-    fader.className = 'channel-fader';
-    fader.min = '0';
-    fader.max = '2';
-    fader.step = '0.1';
-    fader.value = String(weight);
-    fader.setAttribute('aria-label', `Peso de ${source.source_name}`);
-
-    fader.addEventListener('input', () => {
-      const value = parseFloat(fader.value);
-      weights[source.source_id] = value;
-      weightLabel.textContent = value.toFixed(1);
-      channel.classList.toggle('is-muted', value === 0);
-      saveWeights();
+    checkbox.addEventListener('change', () => {
+      if (checkbox.checked) {
+        selectedSources.add(source.source_id);
+      } else {
+        selectedSources.delete(source.source_id);
+      }
+      item.classList.toggle('is-selected', checkbox.checked);
+      saveProfile();
+      refreshSearchAvailability();
       renderReadout();
     });
 
-    const label = document.createElement('div');
-    label.className = 'channel-label';
-    label.textContent = source.source_name;
+    const name = document.createElement('span');
+    name.className = 'press-name';
+    name.textContent = source.source_name;
 
-    channel.classList.toggle('is-muted', weight === 0);
-    channel.append(weightLabel, fader, label);
-    els.channels.appendChild(channel);
+    item.append(checkbox, name);
+    els.channels.appendChild(item);
   });
+}
+
+/** Filtra el buscador a solo los juegos reseñados por alguna prensa seleccionada. */
+function refreshSearchAvailability() {
+  const visibleGames = allGames.filter((g) =>
+    (g.sources || []).some((s) => selectedSources.has(s))
+  );
+
+  els.gameList.innerHTML = '';
+  visibleGames
+    .sort((a, b) => a.game_title.localeCompare(b.game_title))
+    .forEach((g) => {
+      const opt = document.createElement('option');
+      opt.value = g.game_title;
+      opt.dataset.id = g.game_id;
+      els.gameList.appendChild(opt);
+    });
+
+  if (selectedSources.size === 0) {
+    els.search.disabled = true;
+    els.searchStatus.textContent = 'Selecciona al menos una prensa arriba para poder buscar.';
+  } else {
+    els.search.disabled = false;
+    els.searchStatus.textContent = visibleGames.length
+      ? ''
+      : 'Ninguno de los juegos cosechados fue reseñado todavía por las prensas que elegiste.';
+  }
 }
 
 async function onGameChosen() {
@@ -149,20 +203,19 @@ function renderReadout() {
   const reviews = currentGame.reviews || [];
   els.chips.innerHTML = '';
 
-  let weightedSum = 0;
-  let weightTotal = 0;
+  let sum = 0;
+  let count = 0;
 
   reviews.forEach((review) => {
-    const weight = weights[review.source_id] ?? 1.0;
-    const isMuted = weight === 0;
+    const isActive = selectedSources.has(review.source_id);
 
-    if (!isMuted) {
-      weightedSum += review.normalized_score * weight;
-      weightTotal += weight;
+    if (isActive) {
+      sum += review.normalized_score;
+      count++;
     }
 
     const chip = document.createElement('div');
-    chip.className = 'chip' + (isMuted ? ' is-muted' : '');
+    chip.className = 'chip' + (isActive ? '' : ' is-muted');
     chip.innerHTML = `
       <span class="chip-source">${review.source_name}</span>
       <span class="chip-score">${review.normalized_score.toFixed(0)}</span>
@@ -170,8 +223,8 @@ function renderReadout() {
     els.chips.appendChild(chip);
   });
 
-  const hasScore = weightTotal > 0;
-  const finalScore = hasScore ? weightedSum / weightTotal : null;
+  const hasScore = count > 0;
+  const finalScore = hasScore ? sum / count : null;
 
   els.emptyHint.style.display = hasScore ? 'none' : 'block';
   els.gaugeValue.textContent = hasScore ? finalScore.toFixed(1) : '—';
