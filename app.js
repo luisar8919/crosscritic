@@ -1,9 +1,9 @@
 // Si el frontend NO se despliega junto a la Function App como Azure Static
 // Web Apps "managed functions", cambia esto por la URL completa de tu
-// Function App, ej: "https://consola-api.azurewebsites.net/api"
+// Function App, ej: "https://crosscritic-api.azurewebsites.net/api"
 const API_BASE = '/api';
 
-const STORAGE_KEY = 'consola_weights_v1';
+const STORAGE_KEY = 'crosscritic_weights_v1';
 
 const els = {
   search: document.getElementById('game-search'),
