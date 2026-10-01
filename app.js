@@ -53,6 +53,7 @@ async function init() {
   renderChannels();
   refreshSearchAvailability();
   els.search.addEventListener('change', onGameChosen);
+  els.search.addEventListener('input', onSearchInput);
 }
 
 function getOrCreateProfileId() {
@@ -192,16 +193,52 @@ function refreshSearchAvailability() {
   }
 }
 
+let suggestTimer = null;
+
+/** Mientras escribís algo que no matchea tu cosecha local, sugiere títulos
+ * reales de Metacritic (debounced) para no tener que escribir el nombre
+ * exacto del juego. */
+function onSearchInput() {
+  const typed = els.search.value.trim();
+  clearTimeout(suggestTimer);
+
+  const localMatch = Array.from(els.gameList.options).some(
+    (o) => !o.dataset.metacriticSlug && o.value === typed
+  );
+  if (!typed || typed.length < 3 || localMatch) return;
+
+  suggestTimer = setTimeout(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/metacritic/suggest?q=${encodeURIComponent(typed)}`);
+      const data = await res.json();
+      // Saca sugerencias viejas sin tocar las opciones de tu cosecha local.
+      Array.from(els.gameList.options)
+        .filter((o) => o.dataset.metacriticSlug)
+        .forEach((o) => o.remove());
+      (data.suggestions || []).forEach((s) => {
+        const opt = document.createElement('option');
+        opt.value = s.title;
+        opt.dataset.metacriticSlug = s.slug;
+        els.gameList.appendChild(opt);
+      });
+    } catch {
+      /* sin sugerencias, no pasa nada: igual se puede buscar a ciegas */
+    }
+  }, 300);
+}
+
 async function onGameChosen() {
   const typed = els.search.value.trim();
   if (!typed) return;
   const option = Array.from(els.gameList.options).find((o) => o.value === typed);
 
-  if (option) {
+  if (option?.dataset.id) {
     await loadLocalGame(option.dataset.id);
+  } else if (option?.dataset.metacriticSlug) {
+    await loadMetacriticGame(typed, option.dataset.metacriticSlug);
   } else {
-    // No está en tu cosecha RSS: prueba de búsqueda en vivo contra
-    // Metacritic (scraping, ver api/lib/metacritic.py) en vez de nada.
+    // No está en tu cosecha RSS ni elegiste una sugerencia: prueba de
+    // búsqueda en vivo contra Metacritic a ciegas, en vez de nada.
     await loadMetacriticGame(typed);
   }
 }
@@ -219,13 +256,14 @@ async function loadLocalGame(gameId) {
   }
 }
 
-async function loadMetacriticGame(title) {
+async function loadMetacriticGame(title, slug) {
   els.searchStatus.textContent = `Buscando "${title}" en Metacritic (prueba)...`;
   try {
-    const res = await fetch(`${API_BASE}/metacritic?title=${encodeURIComponent(title)}`);
+    const param = slug ? `slug=${encodeURIComponent(slug)}` : `title=${encodeURIComponent(title)}`;
+    const res = await fetch(`${API_BASE}/metacritic?${param}`);
     if (!res.ok) throw new Error('no encontrado');
     const data = await res.json();
-    currentGame = { game_title: data.game_title, reviews: data.reviews, isMetacritic: true };
+    currentGame = { game_title: slug ? title : data.game_title, reviews: data.reviews, isMetacritic: true };
     showGame();
   } catch {
     els.searchStatus.textContent = `No se encontró "${title}" ni en tu cosecha ni en Metacritic.`;
