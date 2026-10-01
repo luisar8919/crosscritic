@@ -275,8 +275,12 @@ html, body {
   border: 1px solid var(--line);
   border-radius: 3px;
   background: var(--panel-raised);
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  font-family: inherit;
+  cursor: pointer;
+  transition: opacity 0.3s ease, transform 0.3s ease, border-color 0.2s ease;
 }
+
+.chip:hover { border-color: var(--amber); }
 
 .chip-source {
   font-family: var(--font-mono);

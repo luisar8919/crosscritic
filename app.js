@@ -31,10 +31,10 @@ const els = {
 const GAUGE_ARC_LENGTH = 314; // aprox. longitud del semicírculo (π * r=100)
 
 let profileId = null;
-let sources = [];              // catálogo completo: [{source_id, source_name}]
-let selectedSources = new Set(); // prensas elegidas por el usuario (su perfil)
-let allGames = [];             // índice completo: [{game_id, game_title, sources}]
-let currentGame = null;        // último juego cargado desde la API
+let sources = [];               // catálogo semilla: [{source_id, source_name}]
+let selectedSources = new Map(); // prensas elegidas por el usuario: source_id -> source_name
+let allGames = [];              // índice completo: [{game_id, game_title, sources}]
+let currentGame = null;         // último juego cargado desde la API
 
 init();
 
@@ -80,15 +80,15 @@ async function loadProfile() {
     const res = await fetch(`${API_BASE}/profile/${profileId}`);
     if (res.ok) {
       const data = await res.json();
-      selectedSources = new Set(data.selected_sources || []);
+      selectedSources = new Map((data.selected_sources || []).map((s) => [s.source_id, s.source_name]));
       return false;
     }
-    // Perfil nuevo: arrancamos con todas las prensas activas en vez de
-    // ninguna, para que la búsqueda sirva de entrada sin un paso extra.
-    selectedSources = new Set(sources.map((s) => s.source_id));
+    // Perfil nuevo: arrancamos con todas las prensas del catálogo semilla
+    // activas, para que la búsqueda sirva de entrada sin un paso extra.
+    selectedSources = new Map(sources.map((s) => [s.source_id, s.source_name]));
     return true;
   } catch {
-    selectedSources = new Set();
+    selectedSources = new Map();
     setApiStatus('No se pudo cargar tu perfil de preferencias.');
     return false;
   }
@@ -96,14 +96,32 @@ async function loadProfile() {
 
 async function saveProfile() {
   try {
+    const selected_sources = Array.from(selectedSources, ([source_id, source_name]) => ({
+      source_id,
+      source_name,
+    }));
     await fetch(`${API_BASE}/profile/${profileId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ selected_sources: Array.from(selectedSources) }),
+      body: JSON.stringify({ selected_sources }),
     });
   } catch {
     setApiStatus('No se pudo guardar tu selección de prensas.');
   }
+}
+
+/** Suma o saca `id` de tus prensas seleccionadas — usado tanto por el
+ * dropdown de arriba como por los chips de reseñas (local o Metacritic). */
+function toggleSource(id, name) {
+  if (selectedSources.has(id)) {
+    selectedSources.delete(id);
+  } else {
+    selectedSources.set(id, name);
+  }
+  saveProfile();
+  renderChannels();
+  refreshSearchAvailability();
+  renderReadout();
 }
 
 async function loadGameIndex() {
@@ -117,44 +135,36 @@ async function loadGameIndex() {
   }
 }
 
+/** El dropdown muestra tus prensas seleccionadas (no un catálogo fijo) —
+ * se arma clickeando chips de reseñas en cualquier juego, local o de
+ * Metacritic. Destildar acá las saca de la selección. */
 function renderChannels() {
   els.channels.innerHTML = '';
-  sources.forEach((source) => {
-    const isSelected = selectedSources.has(source.source_id);
+  const entries = Array.from(selectedSources.entries()).sort((a, b) => a[1].localeCompare(b[1]));
 
+  entries.forEach(([id, name]) => {
     const item = document.createElement('label');
-    item.className = 'press-row' + (isSelected ? ' is-selected' : '');
+    item.className = 'press-row is-selected';
 
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
-    checkbox.checked = isSelected;
-    checkbox.setAttribute('aria-label', source.source_name);
+    checkbox.checked = true;
+    checkbox.setAttribute('aria-label', name);
+    checkbox.addEventListener('change', () => toggleSource(id, name));
 
-    checkbox.addEventListener('change', () => {
-      if (checkbox.checked) {
-        selectedSources.add(source.source_id);
-      } else {
-        selectedSources.delete(source.source_id);
-      }
-      item.classList.toggle('is-selected', checkbox.checked);
-      updatePressSummaryCount();
-      saveProfile();
-      refreshSearchAvailability();
-      renderReadout();
-    });
+    const nameEl = document.createElement('span');
+    nameEl.className = 'press-name';
+    nameEl.textContent = name;
 
-    const name = document.createElement('span');
-    name.className = 'press-name';
-    name.textContent = source.source_name;
-
-    item.append(checkbox, name);
+    item.append(checkbox, nameEl);
     els.channels.appendChild(item);
   });
+
   updatePressSummaryCount();
 }
 
 function updatePressSummaryCount() {
-  els.pressSummaryCount.textContent = `${selectedSources.size} de ${sources.length} seleccionadas`;
+  els.pressSummaryCount.textContent = `${selectedSources.size} seleccionadas`;
 }
 
 /** Filtra el buscador a solo los juegos reseñados por alguna prensa seleccionada. */
@@ -224,7 +234,7 @@ async function loadMetacriticGame(title) {
 
 function showGame() {
   els.searchStatus.textContent = currentGame.isMetacritic
-    ? 'Resultado de Metacritic (prueba) — todas las prensas cuentan, sin filtrar por tu selección.'
+    ? 'Resultado de Metacritic (prueba) — click en una prensa para sumarla a tu selección.'
     : '';
   els.intro.hidden = true;
   els.console.hidden = false;
@@ -242,19 +252,22 @@ function renderReadout() {
   let count = 0;
 
   reviews.forEach((review) => {
-    const isActive = currentGame.isMetacritic || selectedSources.has(review.source_id);
+    const isActive = selectedSources.has(review.source_id);
 
     if (isActive) {
       sum += review.normalized_score;
       count++;
     }
 
-    const chip = document.createElement('div');
+    const chip = document.createElement('button');
+    chip.type = 'button';
     chip.className = 'chip' + (isActive ? '' : ' is-muted');
+    chip.title = isActive ? 'Click para sacarla de tus prensas' : 'Click para sumarla a tus prensas';
     chip.innerHTML = `
       <span class="chip-source">${review.source_name}</span>
       <span class="chip-score">${review.normalized_score.toFixed(0)}</span>
     `;
+    chip.addEventListener('click', () => toggleSource(review.source_id, review.source_name));
     els.chips.appendChild(chip);
   });
 
