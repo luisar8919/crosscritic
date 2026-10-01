@@ -18,6 +18,7 @@ const els = {
   intro: document.getElementById('intro'),
   channels: document.getElementById('channels'),
   channelsSub: document.getElementById('channels-sub'),
+  pressSummaryCount: document.getElementById('press-summary-count'),
   gameTitle: document.getElementById('game-title'),
   gaugeFill: document.getElementById('gauge-fill'),
   gaugeNeedle: document.getElementById('gauge-needle'),
@@ -82,7 +83,9 @@ async function loadProfile() {
       selectedSources = new Set(data.selected_sources || []);
       return false;
     }
-    selectedSources = new Set();
+    // Perfil nuevo: arrancamos con todas las prensas activas en vez de
+    // ninguna, para que la búsqueda sirva de entrada sin un paso extra.
+    selectedSources = new Set(sources.map((s) => s.source_id));
     return true;
   } catch {
     selectedSources = new Set();
@@ -120,7 +123,7 @@ function renderChannels() {
     const isSelected = selectedSources.has(source.source_id);
 
     const item = document.createElement('label');
-    item.className = 'press-item' + (isSelected ? ' is-selected' : '');
+    item.className = 'press-row' + (isSelected ? ' is-selected' : '');
 
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
@@ -134,6 +137,7 @@ function renderChannels() {
         selectedSources.delete(source.source_id);
       }
       item.classList.toggle('is-selected', checkbox.checked);
+      updatePressSummaryCount();
       saveProfile();
       refreshSearchAvailability();
       renderReadout();
@@ -146,6 +150,11 @@ function renderChannels() {
     item.append(checkbox, name);
     els.channels.appendChild(item);
   });
+  updatePressSummaryCount();
+}
+
+function updatePressSummaryCount() {
+  els.pressSummaryCount.textContent = `${selectedSources.size} de ${sources.length} seleccionadas`;
 }
 
 /** Filtra el buscador a solo los juegos reseñados por alguna prensa seleccionada. */
@@ -165,36 +174,62 @@ function refreshSearchAvailability() {
     });
 
   if (selectedSources.size === 0) {
-    els.search.disabled = true;
-    els.searchStatus.textContent = 'Selecciona al menos una prensa arriba para poder buscar.';
+    els.searchStatus.textContent = 'Sin prensas seleccionadas: solo vas a poder buscar en vivo contra Metacritic.';
   } else {
-    els.search.disabled = false;
     els.searchStatus.textContent = visibleGames.length
       ? ''
-      : 'Ninguno de los juegos cosechados fue reseñado todavía por las prensas que elegiste.';
+      : 'Ninguno de los juegos cosechados fue reseñado todavía por las prensas que elegiste — probá buscar igual, cae a Metacritic en vivo.';
   }
 }
 
 async function onGameChosen() {
   const typed = els.search.value.trim();
+  if (!typed) return;
   const option = Array.from(els.gameList.options).find((o) => o.value === typed);
-  if (!option) return;
 
-  const gameId = option.dataset.id;
+  if (option) {
+    await loadLocalGame(option.dataset.id);
+  } else {
+    // No está en tu cosecha RSS: prueba de búsqueda en vivo contra
+    // Metacritic (scraping, ver api/lib/metacritic.py) en vez de nada.
+    await loadMetacriticGame(typed);
+  }
+}
+
+async function loadLocalGame(gameId) {
   els.searchStatus.textContent = 'Cargando…';
-
   try {
     const res = await fetch(`${API_BASE}/games/${gameId}`);
     if (!res.ok) throw new Error('no encontrado');
     currentGame = await res.json();
-    els.searchStatus.textContent = '';
-    els.intro.hidden = true;
-    els.console.hidden = false;
-    els.gameTitle.textContent = currentGame.game_title;
-    renderReadout();
+    currentGame.isMetacritic = false;
+    showGame();
   } catch {
     els.searchStatus.textContent = 'No se pudo cargar ese juego.';
   }
+}
+
+async function loadMetacriticGame(title) {
+  els.searchStatus.textContent = `Buscando "${title}" en Metacritic (prueba)...`;
+  try {
+    const res = await fetch(`${API_BASE}/metacritic?title=${encodeURIComponent(title)}`);
+    if (!res.ok) throw new Error('no encontrado');
+    const data = await res.json();
+    currentGame = { game_title: data.game_title, reviews: data.reviews, isMetacritic: true };
+    showGame();
+  } catch {
+    els.searchStatus.textContent = `No se encontró "${title}" ni en tu cosecha ni en Metacritic.`;
+  }
+}
+
+function showGame() {
+  els.searchStatus.textContent = currentGame.isMetacritic
+    ? 'Resultado de Metacritic (prueba) — todas las prensas cuentan, sin filtrar por tu selección.'
+    : '';
+  els.intro.hidden = true;
+  els.console.hidden = false;
+  els.gameTitle.textContent = currentGame.game_title;
+  renderReadout();
 }
 
 function renderReadout() {
@@ -207,7 +242,7 @@ function renderReadout() {
   let count = 0;
 
   reviews.forEach((review) => {
-    const isActive = selectedSources.has(review.source_id);
+    const isActive = currentGame.isMetacritic || selectedSources.has(review.source_id);
 
     if (isActive) {
       sum += review.normalized_score;
