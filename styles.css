@@ -1,16 +1,17 @@
 :root {
-  --bg: #141311;
-  --panel: #1d1a16;
-  --panel-raised: #232019;
-  --track: #2c2820;
-  --line: #3a352c;
-  --cream: #ede6d6;
-  --muted: #a89d89;
-  --amber: #e8a33d;
-  --crimson: #d4364b;
-  --cobalt: #4f8fc4;
-  --font-display: 'Fraunces', Georgia, serif;
-  --font-body: 'IBM Plex Sans', system-ui, sans-serif;
+  --bg: #0a0e16;
+  --panel: #121a28;
+  --panel-raised: #1a2538;
+  --track: #212e42;
+  --line: #2c3c56;
+  --cream: #e8f4ff;
+  --muted: #6f8299;
+  --amber: #ffcc33;
+  --crimson: #ff3b5c;
+  --good: #39ff9d;
+  --cobalt: #00e5ff;
+  --font-display: 'Orbitron', 'IBM Plex Mono', sans-serif;
+  --font-body: 'IBM Plex Mono', 'Courier New', monospace;
   --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
 }
 
@@ -19,7 +20,9 @@
 html, body {
   margin: 0;
   padding: 0;
-  background: var(--bg);
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.015) 0px, rgba(255, 255, 255, 0.015) 1px, transparent 1px, transparent 3px),
+    var(--bg);
   color: var(--cream);
   font-family: var(--font-body);
 }
@@ -35,25 +38,26 @@ html, body {
 
 .masthead {
   padding: 2.5rem 1.5rem 1.25rem;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--cobalt);
+  box-shadow: 0 1px 16px -4px rgba(0, 229, 255, 0.5);
   text-align: center;
 }
 
 .masthead-mark {
   font-family: var(--font-display);
-  font-weight: 700;
-  font-optical-sizing: auto;
-  font-size: clamp(2.4rem, 6vw, 3.6rem);
-  letter-spacing: 0.02em;
+  font-weight: 900;
+  font-size: clamp(2.1rem, 6vw, 3.4rem);
+  letter-spacing: 0.06em;
   color: var(--cream);
+  text-shadow: 0 0 10px rgba(0, 229, 255, 0.65), 0 0 28px rgba(0, 229, 255, 0.3);
 }
 
 .masthead-tag {
-  margin: 0.35rem 0 0;
+  margin: 0.5rem 0 0;
   color: var(--muted);
-  font-size: 0.9rem;
-  font-style: italic;
-  font-family: var(--font-display);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 /* ---------- Layout ---------- */
@@ -77,12 +81,14 @@ html, body {
   color: var(--cream);
   font-family: var(--font-mono);
   font-size: 1rem;
-  border-radius: 3px;
+  border-radius: 2px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 #game-search:focus {
-  outline: 2px solid var(--cobalt);
-  outline-offset: 1px;
+  outline: none;
+  border-color: var(--cobalt);
+  box-shadow: 0 0 0 1px var(--cobalt), 0 0 18px rgba(0, 229, 255, 0.45);
 }
 
 .search-status {
@@ -95,9 +101,8 @@ html, body {
 
 .intro {
   color: var(--muted);
-  font-family: var(--font-display);
-  font-size: 1.05rem;
-  line-height: 1.6;
+  font-size: 0.95rem;
+  line-height: 1.7;
   max-width: 46ch;
   margin: 3rem auto;
   text-align: center;
@@ -106,17 +111,29 @@ html, body {
 /* ---------- Console ---------- */
 
 .console-panel {
+  position: relative;
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 3px;
+  border-radius: 2px;
   padding: 1.5rem;
   margin-bottom: 1.5rem;
 }
 
+.console-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 1px solid transparent;
+  border-image: linear-gradient(135deg, rgba(0, 229, 255, 0.55), transparent 45%) 1;
+  pointer-events: none;
+}
+
 .panel-title {
   font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 1.3rem;
+  font-weight: 700;
+  font-size: 1.1rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
   margin: 0 0 0.25rem;
   color: var(--cream);
 }
@@ -143,7 +160,7 @@ html, body {
 .press-summary::after {
   content: '▾';
   font-family: var(--font-mono);
-  color: var(--muted);
+  color: var(--cobalt);
   margin-left: 0.75rem;
   transition: transform 0.2s ease;
 }
@@ -157,7 +174,7 @@ html, body {
 .press-summary-count {
   font-family: var(--font-mono);
   font-size: 0.78rem;
-  color: var(--amber);
+  color: var(--cobalt);
 }
 
 .press-dropdown .panel-sub {
@@ -177,24 +194,65 @@ html, body {
   padding: 0.6rem 0.75rem;
   background: var(--panel-raised);
   border: 1px solid var(--line);
-  border-radius: 4px;
+  border-radius: 2px;
   cursor: pointer;
   font-family: var(--font-mono);
   font-size: 0.85rem;
+  letter-spacing: 0.02em;
   color: var(--muted);
-  transition: border-color 0.2s ease, color 0.2s ease;
+  transition: border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .press-row input {
-  accent-color: var(--amber);
+  accent-color: var(--cobalt);
   cursor: pointer;
   width: 16px;
   height: 16px;
 }
 
 .press-row.is-selected {
-  border-color: var(--amber);
+  border-color: var(--cobalt);
   color: var(--cream);
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.25);
+}
+
+/* ---------- Botones tipo HUD ---------- */
+
+.btn-ghost {
+  display: inline-block;
+  background: transparent;
+  border: 1px solid var(--cobalt);
+  color: var(--cobalt);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  padding: 0.5rem 1rem;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn-ghost:hover {
+  background: rgba(0, 229, 255, 0.12);
+  box-shadow: 0 0 14px rgba(0, 229, 255, 0.45);
+}
+
+.btn-ghost:disabled {
+  opacity: 0.5;
+  cursor: default;
+  box-shadow: none;
+}
+
+.chips-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.75rem;
+}
+
+.btn-load-more {
+  display: block;
+  margin: 1.25rem auto 0;
 }
 
 /* ---------- Gauge ---------- */
@@ -225,6 +283,7 @@ html, body {
   stroke-linecap: round;
   stroke-dasharray: 314;
   stroke-dashoffset: 314;
+  filter: drop-shadow(0 0 7px rgba(0, 229, 255, 0.6));
   transition: stroke-dashoffset 0.4s ease, stroke 0.4s ease;
 }
 
@@ -241,17 +300,18 @@ html, body {
 }
 
 .gauge-value {
-  font-family: var(--font-mono);
-  font-weight: 600;
-  font-size: 2.6rem;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 2.5rem;
   color: var(--cream);
   margin-top: -1.6rem;
+  text-shadow: 0 0 14px currentColor;
 }
 
 .gauge-caption {
   font-size: 0.78rem;
   color: var(--muted);
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   margin-top: 0.15rem;
 }
@@ -263,7 +323,7 @@ html, body {
   flex-wrap: wrap;
   gap: 0.6rem;
   justify-content: center;
-  margin-top: 1.5rem;
+  margin-top: 0.5rem;
 }
 
 .chip {
@@ -273,14 +333,19 @@ html, body {
   gap: 0.15rem;
   padding: 0.55rem 0.9rem;
   border: 1px solid var(--line);
-  border-radius: 3px;
+  border-radius: 2px;
   background: var(--panel-raised);
   font-family: inherit;
   cursor: pointer;
-  transition: opacity 0.3s ease, transform 0.3s ease, border-color 0.2s ease;
+  transition: opacity 0.3s ease, transform 0.3s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.chip:hover { border-color: var(--amber); }
+.chip:hover { border-color: var(--cobalt); }
+
+.chip:not(.is-muted) {
+  border-color: var(--cobalt);
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.3);
+}
 
 .chip-source {
   font-family: var(--font-mono);
@@ -292,7 +357,7 @@ html, body {
 
 .chip-score {
   font-family: var(--font-mono);
-  font-weight: 600;
+  font-weight: 700;
   font-size: 1.15rem;
   color: var(--cobalt);
 }
@@ -315,7 +380,7 @@ html, body {
 .foot {
   text-align: center;
   padding: 1.5rem;
-  color: #5a5548;
+  color: var(--muted);
   font-family: var(--font-mono);
   font-size: 0.72rem;
 }

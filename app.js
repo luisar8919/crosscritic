@@ -24,6 +24,8 @@ const els = {
   gaugeNeedle: document.getElementById('gauge-needle'),
   gaugeValue: document.getElementById('gauge-value'),
   chips: document.getElementById('chips'),
+  selectAllBtn: document.getElementById('select-all-btn'),
+  loadMoreBtn: document.getElementById('load-more-btn'),
   emptyHint: document.getElementById('empty-hint'),
   apiStatus: document.getElementById('api-status'),
 };
@@ -54,6 +56,8 @@ async function init() {
   refreshSearchAvailability();
   els.search.addEventListener('change', onGameChosen);
   els.search.addEventListener('input', onSearchInput);
+  els.selectAllBtn.addEventListener('click', selectAllCurrentReviews);
+  els.loadMoreBtn.addEventListener('click', loadMoreMetacriticReviews);
 }
 
 function getOrCreateProfileId() {
@@ -263,11 +267,51 @@ async function loadMetacriticGame(title, slug) {
     const res = await fetch(`${API_BASE}/metacritic?${param}`);
     if (!res.ok) throw new Error('no encontrado');
     const data = await res.json();
-    currentGame = { game_title: slug ? title : data.game_title, reviews: data.reviews, isMetacritic: true };
+    currentGame = {
+      game_title: slug ? title : data.game_title,
+      reviews: data.reviews,
+      isMetacritic: true,
+      metacriticSlug: data.metacritic_slug,
+      nextOffset: data.next_offset,
+      totalAvailable: data.total_available,
+    };
     showGame();
   } catch {
     els.searchStatus.textContent = `No se encontró "${title}" ni en tu cosecha ni en Metacritic.`;
   }
+}
+
+/** Trae la siguiente tanda de reseñas de Metacritic (hay hasta 150+ por
+ * juego, solo mostramos ~20 al principio) y las suma sin pisar las ya
+ * mostradas. */
+async function loadMoreMetacriticReviews() {
+  if (!currentGame?.isMetacritic) return;
+  els.loadMoreBtn.disabled = true;
+  els.loadMoreBtn.textContent = 'CARGANDO...';
+  try {
+    const res = await fetch(
+      `${API_BASE}/metacritic?slug=${encodeURIComponent(currentGame.metacriticSlug)}&offset=${currentGame.nextOffset}`
+    );
+    const data = await res.json();
+    currentGame.reviews = currentGame.reviews.concat(data.reviews || []);
+    currentGame.nextOffset = data.next_offset;
+    currentGame.totalAvailable = data.total_available;
+    renderReadout();
+  } finally {
+    els.loadMoreBtn.disabled = false;
+    els.loadMoreBtn.textContent = 'VER MÁS PRENSAS';
+  }
+}
+
+/** Suma de un toque todas las prensas que reseñaron el juego que estás
+ * viendo (local o Metacritic) a tu selección. */
+function selectAllCurrentReviews() {
+  if (!currentGame) return;
+  (currentGame.reviews || []).forEach((r) => selectedSources.set(r.source_id, r.source_name));
+  saveProfile();
+  renderChannels();
+  refreshSearchAvailability();
+  renderReadout();
 }
 
 function showGame() {
@@ -315,6 +359,10 @@ function renderReadout() {
   els.emptyHint.style.display = hasScore ? 'none' : 'block';
   els.gaugeValue.textContent = hasScore ? finalScore.toFixed(1) : '—';
   updateGauge(hasScore ? finalScore : 0);
+
+  els.loadMoreBtn.hidden = !(
+    currentGame.isMetacritic && currentGame.nextOffset < (currentGame.totalAvailable || 0)
+  );
 }
 
 function updateGauge(score) {
@@ -325,8 +373,8 @@ function updateGauge(score) {
   const rotation = (clamped / 100) * 180 - 90;
   els.gaugeNeedle.style.transform = `rotate(${rotation}deg)`;
 
-  let color = 'var(--cobalt)';
-  if (clamped >= 80) color = 'var(--crimson)';
+  let color = 'var(--crimson)';
+  if (clamped >= 80) color = 'var(--good)';
   else if (clamped >= 40) color = 'var(--amber)';
   els.gaugeFill.style.stroke = color;
   els.gaugeValue.style.color = color;
