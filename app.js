@@ -26,17 +26,20 @@ const els = {
   chips: document.getElementById('chips'),
   selectAllBtn: document.getElementById('select-all-btn'),
   loadMoreBtn: document.getElementById('load-more-btn'),
+  outlierToggleBtn: document.getElementById('outlier-toggle-btn'),
   emptyHint: document.getElementById('empty-hint'),
   apiStatus: document.getElementById('api-status'),
 };
 
 const GAUGE_ARC_LENGTH = 314; // aprox. longitud del semicírculo (π * r=100)
+const OUTLIER_Z = 1.5; // qué tan lejos de la media (en desvíos estándar) cuenta como outlier
 
 let profileId = null;
 let sources = [];               // catálogo semilla: [{source_id, source_name}]
 let selectedSources = new Map(); // prensas elegidas por el usuario: source_id -> source_name
 let allGames = [];              // índice completo: [{game_id, game_title, sources}]
 let currentGame = null;         // último juego cargado desde la API
+let filterOutliersEnabled = false;
 
 init();
 
@@ -56,8 +59,9 @@ async function init() {
   refreshSearchAvailability();
   els.search.addEventListener('change', onGameChosen);
   els.search.addEventListener('input', onSearchInput);
-  els.selectAllBtn.addEventListener('click', selectAllCurrentReviews);
+  els.selectAllBtn.addEventListener('click', toggleAllCurrentReviews);
   els.loadMoreBtn.addEventListener('click', loadMoreMetacriticReviews);
+  els.outlierToggleBtn.addEventListener('click', toggleOutlierFilter);
 }
 
 function getOrCreateProfileId() {
@@ -297,21 +301,73 @@ async function loadMoreMetacriticReviews() {
     currentGame.nextOffset = data.next_offset;
     currentGame.totalAvailable = data.total_available;
     renderReadout();
-  } finally {
-    els.loadMoreBtn.disabled = false;
-    els.loadMoreBtn.textContent = 'VER MÁS PRENSAS';
+  } catch {
+    updateLoadMoreButton();
   }
 }
 
-/** Suma de un toque todas las prensas que reseñaron el juego que estás
- * viendo (local o Metacritic) a tu selección. */
-function selectAllCurrentReviews() {
+/** Botón "ver más": oculto para juegos locales (no hay paginación), y
+ * desactivado (no escondido) una vez que ya se vieron todas las prensas
+ * disponibles de Metacritic. */
+function updateLoadMoreButton() {
+  const hasMore = Boolean(
+    currentGame?.isMetacritic && currentGame.nextOffset < (currentGame.totalAvailable || 0)
+  );
+  els.loadMoreBtn.hidden = !currentGame?.isMetacritic;
+  els.loadMoreBtn.disabled = !hasMore;
+  els.loadMoreBtn.textContent = hasMore ? 'VER MÁS PRENSAS' : 'YA VISTE TODAS LAS PRENSAS';
+}
+
+/** Un solo botón que suma todas las prensas del juego que estás viendo a tu
+ * selección, o las saca todas si ya estaban todas sumadas. */
+function toggleAllCurrentReviews() {
   if (!currentGame) return;
-  (currentGame.reviews || []).forEach((r) => selectedSources.set(r.source_id, r.source_name));
+  const reviews = currentGame.reviews || [];
+  const allSelected = reviews.length > 0 && reviews.every((r) => selectedSources.has(r.source_id));
+
+  reviews.forEach((r) => {
+    if (allSelected) selectedSources.delete(r.source_id);
+    else selectedSources.set(r.source_id, r.source_name);
+  });
+
   saveProfile();
   renderChannels();
   refreshSearchAvailability();
   renderReadout();
+}
+
+function updateSelectAllButton() {
+  const reviews = currentGame?.reviews || [];
+  els.selectAllBtn.hidden = reviews.length === 0;
+  const allSelected = reviews.length > 0 && reviews.every((r) => selectedSources.has(r.source_id));
+  els.selectAllBtn.textContent = allSelected ? '- QUITAR TODAS' : '+ SUMAR TODAS';
+}
+
+function toggleOutlierFilter() {
+  filterOutliersEnabled = !filterOutliersEnabled;
+  els.outlierToggleBtn.setAttribute('aria-pressed', String(filterOutliersEnabled));
+  renderReadout();
+}
+
+/** Devuelve el set de source_id activos cuya nota se aleja demasiado del
+ * resto (más de OUTLIER_Z desvíos estándar de la media) — se excluyen del
+ * promedio pero se siguen mostrando, marcadas aparte. Con pocas reseñas
+ * (menos de 4) no filtra: la muestra es demasiado chica para que la
+ * desviación estándar signifique algo. */
+function computeOutliers(activeReviews) {
+  if (!filterOutliersEnabled || activeReviews.length < 4) return new Set();
+
+  const scores = activeReviews.map((r) => r.normalized_score);
+  const mean = scores.reduce((a, b) => a + b, 0) / scores.length;
+  const variance = scores.reduce((a, b) => a + (b - mean) ** 2, 0) / scores.length;
+  const stddev = Math.sqrt(variance);
+  if (stddev === 0) return new Set();
+
+  const outliers = new Set();
+  activeReviews.forEach((r) => {
+    if (Math.abs(r.normalized_score - mean) > OUTLIER_Z * stddev) outliers.add(r.source_id);
+  });
+  return outliers;
 }
 
 function showGame() {
@@ -330,24 +386,33 @@ function renderReadout() {
   const reviews = currentGame.reviews || [];
   els.chips.innerHTML = '';
 
+  const activeReviews = reviews.filter((r) => selectedSources.has(r.source_id));
+  const outlierIds = computeOutliers(activeReviews);
+
   let sum = 0;
   let count = 0;
 
   reviews.forEach((review) => {
     const isActive = selectedSources.has(review.source_id);
+    const isOutlier = isActive && outlierIds.has(review.source_id);
 
-    if (isActive) {
+    if (isActive && !isOutlier) {
       sum += review.normalized_score;
       count++;
     }
 
     const chip = document.createElement('button');
     chip.type = 'button';
-    chip.className = 'chip' + (isActive ? '' : ' is-muted');
-    chip.title = isActive ? 'Click para sacarla de tus prensas' : 'Click para sumarla a tus prensas';
+    chip.className = 'chip' + (isActive ? '' : ' is-muted') + (isOutlier ? ' is-outlier' : '');
+    chip.title = isOutlier
+      ? 'Excluida del promedio por ser un outlier (click para sacarla del todo)'
+      : isActive
+      ? 'Click para sacarla de tus prensas'
+      : 'Click para sumarla a tus prensas';
     chip.innerHTML = `
       <span class="chip-source">${review.source_name}</span>
       <span class="chip-score">${review.normalized_score.toFixed(0)}</span>
+      ${isOutlier ? '<span class="chip-flag">ATIPICA</span>' : ''}
     `;
     chip.addEventListener('click', () => toggleSource(review.source_id, review.source_name));
     els.chips.appendChild(chip);
@@ -360,9 +425,8 @@ function renderReadout() {
   els.gaugeValue.textContent = hasScore ? finalScore.toFixed(1) : '—';
   updateGauge(hasScore ? finalScore : 0);
 
-  els.loadMoreBtn.hidden = !(
-    currentGame.isMetacritic && currentGame.nextOffset < (currentGame.totalAvailable || 0)
-  );
+  updateLoadMoreButton();
+  updateSelectAllButton();
 }
 
 function updateGauge(score) {

@@ -244,9 +244,15 @@ html, body {
   box-shadow: none;
 }
 
+.btn-toggle[aria-pressed="true"] {
+  background: rgba(0, 229, 255, 0.18);
+  box-shadow: 0 0 14px rgba(0, 229, 255, 0.5);
+}
+
 .chips-toolbar {
   display: flex;
   justify-content: flex-end;
+  gap: 0.6rem;
   margin-bottom: 0.75rem;
 }
 
@@ -342,7 +348,7 @@ html, body {
 
 .chip:hover { border-color: var(--cobalt); }
 
-.chip:not(.is-muted) {
+.chip:not(.is-muted):not(.is-outlier) {
   border-color: var(--cobalt);
   box-shadow: 0 0 10px rgba(0, 229, 255, 0.3);
 }
@@ -361,6 +367,20 @@ html, body {
   font-size: 1.15rem;
   color: var(--cobalt);
 }
+
+.chip-flag {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.05em;
+  color: var(--crimson);
+}
+
+.chip.is-outlier {
+  border-style: dashed;
+  border-color: var(--crimson);
+}
+
+.chip.is-outlier .chip-score { color: var(--crimson); }
 
 .chip.is-muted {
   opacity: 0.35;
