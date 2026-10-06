@@ -437,23 +437,113 @@ function scoreFor(reviews) {
   return counted.length ? counted.reduce((a, r) => a + r.normalized_score, 0) / counted.length : null;
 }
 
-function shareLink() {
+/** Genera una tarjeta PNG (canvas nativo) con el juego y la nota para
+ * compartir en redes — ahí es donde se ve la promoción, un link pelado no
+ * dice nada por sí mismo. En mobile usa el share sheet nativo con el
+ * archivo adjunto; si el navegador no soporta compartir archivos, lo
+ * descarga para subirlo a mano. */
+async function shareLink() {
   if (!currentGame) return;
-  const params = new URLSearchParams();
-  if (currentGame.isMetacritic) params.set('mc', currentGame.metacriticSlug);
-  else params.set('local', currentGame.gameId);
-  params.set('title', currentGame.game_title);
-  params.set('src', btoa(encodeURIComponent(JSON.stringify(Array.from(selectedSources)))));
+  const score = parseFloat(els.gaugeValue.textContent);
+  const hasScore = !Number.isNaN(score);
+  const activeCount = (currentGame.reviews || []).filter((r) => selectedSources.has(r.source_id)).length;
 
-  const url = `${location.origin}${location.pathname}?${params.toString()}`;
-  navigator.clipboard
-    .writeText(url)
-    .then(() => {
-      els.searchStatus.textContent = 'Link copiado al portapapeles.';
-    })
-    .catch(() => {
-      els.searchStatus.textContent = url;
-    });
+  const canvas = buildShareCard({
+    title: currentGame.game_title,
+    score: hasScore ? score : null,
+    pressCount: activeCount,
+  });
+
+  canvas.toBlob(async (blob) => {
+    if (!blob) return;
+    const fileName = `crosscritic-${currentGame.gameId || currentGame.metacriticSlug || 'nota'}.png`;
+    const file = new File([blob], fileName, { type: 'image/png' });
+
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({
+          files: [file],
+          title: currentGame.game_title,
+          text: `${currentGame.game_title} en CrossCritic: ${hasScore ? score.toFixed(1) : '—'}`,
+        });
+        return;
+      } catch {
+        // el usuario canceló el share sheet, o no hay apps destino: cae a descarga
+      }
+    }
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    link.click();
+    URL.revokeObjectURL(url);
+    els.searchStatus.textContent = 'Imagen descargada — subila a tus redes.';
+  }, 'image/png');
+}
+
+function buildShareCard({ title, score, pressCount }) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1200;
+  canvas.height = 675;
+  const ctx = canvas.getContext('2d');
+
+  let color = '#ff3b5c';
+  if (score != null) {
+    if (score >= 80) color = '#39ff9d';
+    else if (score >= 40) color = '#ffcc33';
+  }
+
+  ctx.fillStyle = '#0a0e16';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 4;
+  ctx.strokeRect(24, 24, canvas.width - 48, canvas.height - 48);
+
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#e8f4ff';
+  ctx.font = '800 42px "IBM Plex Mono", monospace';
+  ctx.fillText('CROSSCRITIC', canvas.width / 2, 110);
+
+  ctx.font = '400 22px "IBM Plex Mono", monospace';
+  ctx.fillStyle = '#6f8299';
+  ctx.fillText('tu redacción, tus pesos', canvas.width / 2, 148);
+
+  ctx.font = '700 46px "IBM Plex Mono", monospace';
+  ctx.fillStyle = '#e8f4ff';
+  wrapCenteredText(ctx, title, canvas.width / 2, 280, 1000, 56);
+
+  ctx.font = '900 170px "IBM Plex Mono", monospace';
+  ctx.fillStyle = color;
+  ctx.fillText(score != null ? score.toFixed(1) : '—', canvas.width / 2, 490);
+
+  ctx.font = '400 24px "IBM Plex Mono", monospace';
+  ctx.fillStyle = '#6f8299';
+  const caption = pressCount > 0
+    ? `ponderado de ${pressCount} prensa${pressCount === 1 ? '' : 's'} de confianza`
+    : 'nota promedio';
+  ctx.fillText(caption, canvas.width / 2, 545);
+
+  return canvas;
+}
+
+function wrapCenteredText(ctx, text, x, y, maxWidth, lineHeight) {
+  const words = text.split(' ');
+  const lines = [];
+  let line = '';
+  words.forEach((word) => {
+    const test = line ? `${line} ${word}` : word;
+    if (line && ctx.measureText(test).width > maxWidth) {
+      lines.push(line);
+      line = word;
+    } else {
+      line = test;
+    }
+  });
+  lines.push(line);
+
+  const startY = y - ((lines.length - 1) * lineHeight) / 2;
+  lines.forEach((l, i) => ctx.fillText(l, x, startY + i * lineHeight));
 }
 
 /** Trae la siguiente tanda de reseñas de Metacritic (hay hasta 150+ por
