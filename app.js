@@ -9,11 +9,14 @@ const API_BASE = 'https://crosscritic-fabhbkf7due8hqbc.eastus-01.azurewebsites.n
 // servidor (Blob Storage) contra ese id, así que sobreviven a que se borre
 // el localStorage de la nota final, pero no cruzan de un navegador a otro.
 const PROFILE_ID_KEY = 'crosscritic_profile_id';
+const RECENT_KEY = 'crosscritic_recent_searches';
+const MAX_RECENT = 8;
 
 const els = {
   search: document.getElementById('game-search'),
   gameList: document.getElementById('game-list'),
   searchStatus: document.getElementById('search-status'),
+  recentSearches: document.getElementById('recent-searches'),
   console: document.getElementById('console'),
   intro: document.getElementById('intro'),
   channels: document.getElementById('channels'),
@@ -27,6 +30,10 @@ const els = {
   selectAllBtn: document.getElementById('select-all-btn'),
   loadMoreBtn: document.getElementById('load-more-btn'),
   outlierToggleBtn: document.getElementById('outlier-toggle-btn'),
+  shareBtn: document.getElementById('share-btn'),
+  compareSearch: document.getElementById('compare-search'),
+  compareClearBtn: document.getElementById('compare-clear-btn'),
+  compareResult: document.getElementById('compare-result'),
   emptyHint: document.getElementById('empty-hint'),
   apiStatus: document.getElementById('api-status'),
 };
@@ -39,16 +46,20 @@ let sources = [];               // catálogo semilla: [{source_id, source_name}]
 let selectedSources = new Map(); // prensas elegidas por el usuario: source_id -> source_name
 let allGames = [];              // índice completo: [{game_id, game_title, sources}]
 let currentGame = null;         // último juego cargado desde la API
+let compareGame = null;         // segundo juego cargado para comparar contra currentGame
+let recentSearches = [];        // historial local: [{title, kind:'local'|'mc', id}]
 let filterOutliersEnabled = false;
 
 init();
 
 async function init() {
   profileId = getOrCreateProfileId();
+  loadRecent();
 
   await loadSources();
   const isNewProfile = await loadProfile();
   await loadGameIndex();
+  await applySharedLinkIfPresent();
 
   if (isNewProfile) {
     els.channelsSub.textContent =
@@ -56,12 +67,43 @@ async function init() {
   }
 
   renderChannels();
+  renderRecent();
   refreshSearchAvailability();
   els.search.addEventListener('change', onGameChosen);
   els.search.addEventListener('input', onSearchInput);
+  els.compareSearch.addEventListener('change', onCompareChosen);
+  els.compareClearBtn.addEventListener('click', clearCompare);
   els.selectAllBtn.addEventListener('click', toggleAllCurrentReviews);
   els.loadMoreBtn.addEventListener('click', loadMoreMetacriticReviews);
   els.outlierToggleBtn.addEventListener('click', toggleOutlierFilter);
+  els.shareBtn.addEventListener('click', shareLink);
+}
+
+/** Link compartible: ?local=<id>|mc=<slug>&title=<titulo>&src=<prensas en
+ * base64>. Si trae `src`, pisa el perfil guardado (y lo persiste) para que
+ * quien abre el link vea la misma selección de prensas que lo generó. */
+async function applySharedLinkIfPresent() {
+  const params = new URLSearchParams(location.search);
+  const srcParam = params.get('src');
+  if (srcParam) {
+    try {
+      selectedSources = new Map(JSON.parse(decodeURIComponent(atob(srcParam))));
+      saveProfile();
+    } catch {
+      /* link corrupto: seguimos con el perfil guardado */
+    }
+  }
+
+  const title = params.get('title') || '';
+  const local = params.get('local');
+  const mc = params.get('mc');
+  if (local) {
+    els.search.value = title;
+    await loadLocalGame(local);
+  } else if (mc) {
+    els.search.value = title;
+    await loadMetacriticGame(title, mc);
+  }
 }
 
 function getOrCreateProfileId() {
@@ -251,38 +293,167 @@ async function onGameChosen() {
   }
 }
 
+async function fetchLocalGame(gameId) {
+  const res = await fetch(`${API_BASE}/games/${gameId}`);
+  if (!res.ok) return null;
+  const data = await res.json();
+  data.isMetacritic = false;
+  data.gameId = gameId;
+  return data;
+}
+
+async function fetchMetacriticGame(title, slug) {
+  const param = slug ? `slug=${encodeURIComponent(slug)}` : `title=${encodeURIComponent(title)}`;
+  const res = await fetch(`${API_BASE}/metacritic?${param}`);
+  if (!res.ok) return null;
+  const data = await res.json();
+  return {
+    game_title: slug ? title : data.game_title,
+    reviews: data.reviews,
+    isMetacritic: true,
+    metacriticSlug: data.metacritic_slug,
+    nextOffset: data.next_offset,
+    totalAvailable: data.total_available,
+  };
+}
+
 async function loadLocalGame(gameId) {
   els.searchStatus.textContent = 'Cargando…';
-  try {
-    const res = await fetch(`${API_BASE}/games/${gameId}`);
-    if (!res.ok) throw new Error('no encontrado');
-    currentGame = await res.json();
-    currentGame.isMetacritic = false;
-    showGame();
-  } catch {
+  const game = await fetchLocalGame(gameId);
+  if (!game) {
     els.searchStatus.textContent = 'No se pudo cargar ese juego.';
+    return;
   }
+  currentGame = game;
+  pushRecent({ title: game.game_title, kind: 'local', id: gameId });
+  showGame();
 }
 
 async function loadMetacriticGame(title, slug) {
   els.searchStatus.textContent = `Buscando "${title}" en Metacritic (prueba)...`;
-  try {
-    const param = slug ? `slug=${encodeURIComponent(slug)}` : `title=${encodeURIComponent(title)}`;
-    const res = await fetch(`${API_BASE}/metacritic?${param}`);
-    if (!res.ok) throw new Error('no encontrado');
-    const data = await res.json();
-    currentGame = {
-      game_title: slug ? title : data.game_title,
-      reviews: data.reviews,
-      isMetacritic: true,
-      metacriticSlug: data.metacritic_slug,
-      nextOffset: data.next_offset,
-      totalAvailable: data.total_available,
-    };
-    showGame();
-  } catch {
+  const game = await fetchMetacriticGame(title, slug);
+  if (!game) {
     els.searchStatus.textContent = `No se encontró "${title}" ni en tu cosecha ni en Metacritic.`;
+    return;
   }
+  currentGame = game;
+  pushRecent({ title: game.game_title, kind: 'mc', id: game.metacriticSlug });
+  showGame();
+}
+
+/** Historial local de búsquedas (solo este navegador, no viaja con el
+ * perfil del servidor): últimos juegos vistos, para volver a abrirlos sin
+ * re-escribir el nombre. */
+function loadRecent() {
+  try {
+    recentSearches = JSON.parse(localStorage.getItem(RECENT_KEY) || '[]');
+  } catch {
+    recentSearches = [];
+  }
+}
+
+function pushRecent(entry) {
+  if (!entry.id) return;
+  recentSearches = recentSearches.filter((r) => r.title !== entry.title);
+  recentSearches.unshift(entry);
+  recentSearches = recentSearches.slice(0, MAX_RECENT);
+  localStorage.setItem(RECENT_KEY, JSON.stringify(recentSearches));
+  renderRecent();
+}
+
+function renderRecent() {
+  els.recentSearches.innerHTML = '';
+  els.recentSearches.hidden = recentSearches.length === 0;
+  recentSearches.forEach((entry) => {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'recent-chip';
+    chip.textContent = entry.title;
+    chip.addEventListener('click', () => {
+      els.search.value = entry.title;
+      if (entry.kind === 'local') loadLocalGame(entry.id);
+      else loadMetacriticGame(entry.title, entry.id);
+    });
+    els.recentSearches.appendChild(chip);
+  });
+}
+
+/** Compara currentGame contra un segundo juego, con la misma selección de
+ * prensas y el mismo filtro de outliers — no duplica el panel completo,
+ * solo la nota final y la diferencia. */
+async function onCompareChosen() {
+  const typed = els.compareSearch.value.trim();
+  if (!typed) return;
+  const option = Array.from(els.gameList.options).find((o) => o.value === typed);
+
+  els.compareResult.hidden = false;
+  els.compareResult.textContent = 'Cargando…';
+
+  const game = option?.dataset.id
+    ? await fetchLocalGame(option.dataset.id)
+    : await fetchMetacriticGame(typed, option?.dataset.metacriticSlug);
+
+  if (!game) {
+    els.compareResult.textContent = `No se encontró "${typed}".`;
+    return;
+  }
+  compareGame = game;
+  renderCompare();
+}
+
+function clearCompare() {
+  compareGame = null;
+  els.compareSearch.value = '';
+  renderCompare();
+}
+
+function renderCompare() {
+  if (!compareGame || !currentGame) {
+    els.compareResult.hidden = true;
+    els.compareClearBtn.hidden = true;
+    return;
+  }
+
+  const mainScore = scoreFor(currentGame.reviews || []);
+  const otherScore = scoreFor(compareGame.reviews || []);
+  const diff = mainScore != null && otherScore != null ? otherScore - mainScore : null;
+  const diffText = diff == null ? '' : `${diff >= 0 ? '+' : ''}${diff.toFixed(1)} vs ${currentGame.game_title}`;
+
+  els.compareResult.hidden = false;
+  els.compareClearBtn.hidden = false;
+  els.compareResult.innerHTML = `
+    <span class="compare-title">${compareGame.game_title}</span>
+    <span class="compare-score">${otherScore != null ? otherScore.toFixed(1) : '—'}</span>
+    ${diff != null ? `<span class="compare-diff">${diffText}</span>` : ''}
+  `;
+}
+
+/** Nota final de un set de reseñas con tu selección y filtro de outliers
+ * actuales — misma regla que renderReadout, pero sin armar los chips. */
+function scoreFor(reviews) {
+  const active = reviews.filter((r) => selectedSources.has(r.source_id));
+  const outliers = computeOutliers(active);
+  const counted = active.filter((r) => !outliers.has(r.source_id));
+  return counted.length ? counted.reduce((a, r) => a + r.normalized_score, 0) / counted.length : null;
+}
+
+function shareLink() {
+  if (!currentGame) return;
+  const params = new URLSearchParams();
+  if (currentGame.isMetacritic) params.set('mc', currentGame.metacriticSlug);
+  else params.set('local', currentGame.gameId);
+  params.set('title', currentGame.game_title);
+  params.set('src', btoa(encodeURIComponent(JSON.stringify(Array.from(selectedSources)))));
+
+  const url = `${location.origin}${location.pathname}?${params.toString()}`;
+  navigator.clipboard
+    .writeText(url)
+    .then(() => {
+      els.searchStatus.textContent = 'Link copiado al portapapeles.';
+    })
+    .catch(() => {
+      els.searchStatus.textContent = url;
+    });
 }
 
 /** Trae la siguiente tanda de reseñas de Metacritic (hay hasta 150+ por
@@ -377,6 +548,8 @@ function showGame() {
   els.intro.hidden = true;
   els.console.hidden = false;
   els.gameTitle.textContent = currentGame.game_title;
+  compareGame = null;
+  els.compareSearch.value = '';
   renderReadout();
 }
 
@@ -427,6 +600,7 @@ function renderReadout() {
 
   updateLoadMoreButton();
   updateSelectAllButton();
+  renderCompare();
 }
 
 function updateGauge(score) {

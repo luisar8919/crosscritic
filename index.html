@@ -40,6 +40,7 @@
     />
     <datalist id="game-list"></datalist>
     <span id="search-status" class="search-status"></span>
+    <div id="recent-searches" class="recent-chips" hidden></div>
   </section>
 
   <section class="console-panel readout-panel" id="console" hidden>
@@ -58,10 +59,24 @@
     <div class="chips-toolbar">
       <button type="button" id="outlier-toggle-btn" class="btn-ghost btn-toggle" aria-pressed="false">FILTRAR OUTLIERS</button>
       <button type="button" id="select-all-btn" class="btn-ghost">+ SUMAR TODAS</button>
+      <button type="button" id="share-btn" class="btn-ghost">COMPARTIR LINK</button>
     </div>
     <div id="chips" class="chips"></div>
     <button type="button" id="load-more-btn" class="btn-ghost btn-load-more" hidden>VER MÁS PRENSAS</button>
     <p id="empty-hint" class="empty-hint">Ninguna de tus prensas seleccionadas reseñó este juego todavía.</p>
+
+    <div class="compare-strip">
+      <label for="compare-search" class="visually-hidden">Comparar con otro juego</label>
+      <input
+        id="compare-search"
+        type="text"
+        list="game-list"
+        placeholder="Comparar con otro juego…"
+        autocomplete="off"
+      />
+      <button type="button" id="compare-clear-btn" class="btn-ghost" hidden>QUITAR COMPARACIÓN</button>
+    </div>
+    <div id="compare-result" class="compare-result" hidden></div>
   </section>
 
   <section class="intro" id="intro">

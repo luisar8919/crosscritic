@@ -99,6 +99,30 @@ html, body {
   font-family: var(--font-mono);
 }
 
+.recent-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+}
+
+.recent-chip {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.recent-chip:hover {
+  border-color: var(--cobalt);
+  color: var(--cream);
+}
+
 .intro {
   color: var(--muted);
   font-size: 0.95rem;
@@ -259,6 +283,57 @@ html, body {
 .btn-load-more {
   display: block;
   margin: 1.25rem auto 0;
+}
+
+.compare-strip {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--line);
+}
+
+.compare-strip input {
+  flex: 1;
+  padding: 0.6rem 0.75rem;
+  background: var(--panel-raised);
+  border: 1px solid var(--line);
+  color: var(--cream);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  border-radius: 2px;
+}
+
+.compare-strip input:focus {
+  outline: none;
+  border-color: var(--cobalt);
+}
+
+.compare-result {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+  font-family: var(--font-mono);
+}
+
+.compare-title {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.compare-score {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.4rem;
+  color: var(--cobalt);
+}
+
+.compare-diff {
+  font-size: 0.78rem;
+  color: var(--muted);
 }
 
 /* ---------- Gauge ---------- */
