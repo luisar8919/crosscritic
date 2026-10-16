@@ -83,14 +83,24 @@ async function init() {
 
 /** Arma el mismo link que lee applySharedLinkIfPresent (?local=/mc=&title=&
  * src=) y lo copia al portapapeles — para compartir la valoración exacta
- * (juego + tu selección de prensas) con alguien, no solo una imagen. */
+ * (juego + tu selección de prensas) con alguien, no solo una imagen.
+ *
+ * `src` solo lleva los ids de las prensas ACTIVAS en este juego (no todo tu
+ * perfil acumulado): eso es lo que realmente determina la nota que estás
+ * viendo, y mantiene el link corto — perfiles viejos con decenas de prensas
+ * sumadas de otros juegos tiraban un link tan largo que el navegador lo
+ * rechazaba (Request Too Long). */
 function copyShareLink() {
   if (!currentGame) return;
+  const activeIds = (currentGame.reviews || [])
+    .map((r) => r.source_id)
+    .filter((id) => selectedSources.has(id));
+
   const params = new URLSearchParams();
   if (currentGame.isMetacritic) params.set('mc', currentGame.metacriticSlug);
   else params.set('local', currentGame.gameId);
   params.set('title', currentGame.game_title);
-  params.set('src', btoa(encodeURIComponent(JSON.stringify(Array.from(selectedSources)))));
+  params.set('src', activeIds.join(','));
 
   const url = `${location.origin}${location.pathname}?${params.toString()}`;
   navigator.clipboard
@@ -103,19 +113,19 @@ function copyShareLink() {
     });
 }
 
-/** Link compartible: ?local=<id>|mc=<slug>&title=<titulo>&src=<prensas en
- * base64>. Si trae `src`, pisa el perfil guardado (y lo persiste) para que
- * quien abre el link vea la misma selección de prensas que lo generó. */
+/** Link compartible: ?local=<id>|mc=<slug>&title=<titulo>&src=<ids separados
+ * por coma>. Si trae `src`, pisa el perfil guardado (y lo persiste) para que
+ * quien abre el link vea la misma selección de prensas que lo generó. Los
+ * nombres reales de esos ids se completan al cargar el juego (ver
+ * reconcileSourceNames) — el link solo necesita el id para que el cálculo
+ * de la nota ya dé igual. */
 async function applySharedLinkIfPresent() {
   const params = new URLSearchParams(location.search);
   const srcParam = params.get('src');
   if (srcParam) {
-    try {
-      selectedSources = new Map(JSON.parse(decodeURIComponent(atob(srcParam))));
-      saveProfile();
-    } catch {
-      /* link corrupto: seguimos con el perfil guardado */
-    }
+    const ids = srcParam.split(',').filter(Boolean);
+    selectedSources = new Map(ids.map((id) => [id, id]));
+    saveProfile();
   }
 
   const title = params.get('title') || '';
@@ -664,7 +674,22 @@ function showGame() {
   els.gameTitle.textContent = currentGame.game_title;
   compareGame = null;
   els.compareSearch.value = '';
+  if (reconcileSourceNames(currentGame.reviews)) renderChannels();
   renderReadout();
+}
+
+/** Un link compartido solo trae ids de prensa (ver applySharedLinkIfPresent);
+ * en cuanto el juego carga, sus reseñas traen el nombre real de cada fuente
+ * y lo completamos acá en vez de mostrar el id pelado en el dropdown. */
+function reconcileSourceNames(reviews) {
+  let changed = false;
+  (reviews || []).forEach((r) => {
+    if (selectedSources.get(r.source_id) === r.source_id && r.source_name !== r.source_id) {
+      selectedSources.set(r.source_id, r.source_name);
+      changed = true;
+    }
+  });
+  return changed;
 }
 
 function renderReadout() {
