@@ -70,7 +70,7 @@ async function init() {
 
   if (isNewProfile) {
     els.channelsSub.textContent =
-      '¡Bienvenido! Elige qué prensas quieres usar para calcular la nota — se guarda en tu perfil.';
+      "Welcome! Choose which outlets you want to use to calculate the score — it's saved to your profile.";
   }
 
   renderChannels();
@@ -112,7 +112,7 @@ function copyShareLink() {
   navigator.clipboard
     .writeText(url)
     .then(() => {
-      els.searchStatus.textContent = 'Link copiado — al abrirlo se ve el mismo juego con tu misma selección de prensas.';
+      els.searchStatus.textContent = 'Link copied — opening it shows the same game with your exact outlet selection.';
     })
     .catch(() => {
       els.searchStatus.textContent = url;
@@ -161,7 +161,7 @@ async function loadSources() {
     const data = await res.json();
     sources = data.sources || [];
   } catch {
-    setApiStatus('No se pudo cargar el catálogo de prensas. ¿La API está desplegada?');
+    setApiStatus("Couldn't load the outlet catalog. Is the API deployed?");
   }
 }
 
@@ -180,7 +180,7 @@ async function loadProfile() {
     return true;
   } catch {
     selectedSources = new Map();
-    setApiStatus('No se pudo cargar tu perfil de preferencias.');
+    setApiStatus("Couldn't load your preferences profile.");
     return false;
   }
 }
@@ -197,7 +197,7 @@ async function saveProfile() {
       body: JSON.stringify({ selected_sources }),
     });
   } catch {
-    setApiStatus('No se pudo guardar tu selección de prensas.');
+    setApiStatus("Couldn't save your outlet selection.");
   }
 }
 
@@ -222,7 +222,7 @@ async function loadGameIndex() {
     allGames = data.games || [];
   } catch {
     allGames = [];
-    setApiStatus('No se pudo cargar la lista de juegos.');
+    setApiStatus("Couldn't load the game list.");
   }
 }
 
@@ -255,7 +255,7 @@ function renderChannels() {
 }
 
 function updatePressSummaryCount() {
-  els.pressSummaryCount.textContent = `${selectedSources.size} seleccionadas`;
+  els.pressSummaryCount.textContent = `${selectedSources.size} selected`;
 }
 
 /** Filtra el buscador a solo los juegos reseñados por alguna prensa seleccionada. */
@@ -275,11 +275,11 @@ function refreshSearchAvailability() {
     });
 
   if (selectedSources.size === 0) {
-    els.searchStatus.textContent = 'Sin prensas seleccionadas: solo vas a poder buscar en vivo contra Metacritic.';
+    els.searchStatus.textContent = "No outlets selected: you'll only be able to search live against Metacritic.";
   } else {
     els.searchStatus.textContent = visibleGames.length
       ? ''
-      : 'Ninguno de los juegos cosechados fue reseñado todavía por las prensas que elegiste — probá buscar igual, cae a Metacritic en vivo.';
+      : 'None of the harvested games have been reviewed yet by the outlets you picked — try searching anyway, it falls back to live Metacritic.';
   }
 }
 
@@ -371,10 +371,10 @@ async function fetchMetacriticGame(title, slug) {
 }
 
 async function loadLocalGame(gameId) {
-  els.searchStatus.textContent = 'Cargando…';
+  els.searchStatus.textContent = 'Loading…';
   const game = await fetchLocalGame(gameId);
   if (!game) {
-    els.searchStatus.textContent = 'No se pudo cargar ese juego.';
+    els.searchStatus.textContent = "Couldn't load that game.";
     return;
   }
   currentGame = game;
@@ -383,10 +383,10 @@ async function loadLocalGame(gameId) {
 }
 
 async function loadMetacriticGame(title, slug) {
-  els.searchStatus.textContent = `Buscando "${title}" en Metacritic (prueba)...`;
+  els.searchStatus.textContent = `Searching for "${title}" on Metacritic (beta)...`;
   const game = await fetchMetacriticGame(title, slug);
   if (!game) {
-    els.searchStatus.textContent = `No se encontró "${title}" ni en tu cosecha ni en Metacritic.`;
+    els.searchStatus.textContent = `Couldn't find "${title}" in your harvest or on Metacritic.`;
     return;
   }
   currentGame = game;
@@ -440,14 +440,14 @@ async function onCompareChosen() {
   const option = Array.from(els.gameList.options).find((o) => o.value === typed);
 
   els.compareResult.hidden = false;
-  els.compareResult.textContent = 'Cargando…';
+  els.compareResult.textContent = 'Loading…';
 
   const game = option?.dataset.id
     ? await fetchLocalGame(option.dataset.id)
     : await fetchMetacriticGame(typed, option?.dataset.metacriticSlug);
 
   if (!game) {
-    els.compareResult.textContent = `No se encontró "${typed}".`;
+    els.compareResult.textContent = `Couldn't find "${typed}".`;
     return;
   }
   compareGame = game;
@@ -517,7 +517,7 @@ async function shareLink() {
         await navigator.share({
           files: [file],
           title: currentGame.game_title,
-          text: `${currentGame.game_title} en CrossCritic: ${hasScore ? score.toFixed(1) : '—'}`,
+          text: `${currentGame.game_title} on CrossCritic: ${hasScore ? score.toFixed(1) : '—'}`,
         });
         return;
       } catch {
@@ -531,7 +531,7 @@ async function shareLink() {
     link.download = fileName;
     link.click();
     URL.revokeObjectURL(url);
-    els.searchStatus.textContent = 'Imagen descargada — subila a tus redes.';
+    els.searchStatus.textContent = 'Image downloaded — post it on your socials.';
   }, 'image/png');
 }
 
@@ -560,7 +560,7 @@ function buildShareCard({ title, score, pressCount }) {
 
   ctx.font = '400 22px "IBM Plex Mono", monospace';
   ctx.fillStyle = '#6f8299';
-  ctx.fillText('tu redacción, tus pesos', canvas.width / 2, 148);
+  ctx.fillText('your press, your weights', canvas.width / 2, 148);
 
   ctx.font = '700 46px "IBM Plex Mono", monospace';
   ctx.fillStyle = '#e8f4ff';
@@ -573,8 +573,8 @@ function buildShareCard({ title, score, pressCount }) {
   ctx.font = '400 24px "IBM Plex Mono", monospace';
   ctx.fillStyle = '#6f8299';
   const caption = pressCount > 0
-    ? `ponderado de ${pressCount} prensa${pressCount === 1 ? '' : 's'} de confianza`
-    : 'nota promedio';
+    ? `weighted from ${pressCount} trusted outlet${pressCount === 1 ? '' : 's'}`
+    : 'average score';
   ctx.fillText(caption, canvas.width / 2, 545);
 
   return canvas;
@@ -605,7 +605,7 @@ function wrapCenteredText(ctx, text, x, y, maxWidth, lineHeight) {
 async function loadMoreMetacriticReviews() {
   if (!currentGame?.isMetacritic) return;
   els.loadMoreBtn.disabled = true;
-  els.loadMoreBtn.textContent = 'CARGANDO...';
+  els.loadMoreBtn.textContent = 'LOADING...';
   try {
     const res = await fetch(
       `${API_BASE}/metacritic?slug=${encodeURIComponent(currentGame.metacriticSlug)}&offset=${currentGame.nextOffset}`
@@ -629,7 +629,7 @@ function updateLoadMoreButton() {
   );
   els.loadMoreBtn.hidden = !currentGame?.isMetacritic;
   els.loadMoreBtn.disabled = !hasMore;
-  els.loadMoreBtn.textContent = hasMore ? 'VER MÁS PRENSAS' : 'YA VISTE TODAS LAS PRENSAS';
+  els.loadMoreBtn.textContent = hasMore ? 'SHOW MORE OUTLETS' : 'ALL OUTLETS SHOWN';
 }
 
 /** Un solo botón que suma todas las prensas del juego que estás viendo a tu
@@ -654,7 +654,7 @@ function updateSelectAllButton() {
   const reviews = currentGame?.reviews || [];
   els.selectAllBtn.hidden = reviews.length === 0;
   const allSelected = reviews.length > 0 && reviews.every((r) => selectedSources.has(r.source_id));
-  els.selectAllBtn.textContent = allSelected ? '- QUITAR TODAS' : '+ SUMAR TODAS';
+  els.selectAllBtn.textContent = allSelected ? '- REMOVE ALL' : '+ ADD ALL';
 }
 
 function toggleOutlierFilter() {
@@ -686,7 +686,7 @@ function computeOutliers(activeReviews) {
 
 function showGame() {
   els.searchStatus.textContent = currentGame.isMetacritic
-    ? 'Resultado de Metacritic (prueba) — click en una prensa para sumarla a tu selección.'
+    ? 'Metacritic result (beta) — click an outlet to add it to your selection.'
     : '';
   els.intro.hidden = true;
   els.console.hidden = false;
@@ -751,14 +751,14 @@ function renderReadout() {
     chip.type = 'button';
     chip.className = 'chip' + (isActive ? '' : ' is-muted') + (isOutlier ? ' is-outlier' : '');
     chip.title = isOutlier
-      ? 'Excluida del promedio por ser un outlier (click para sacarla del todo)'
+      ? 'Excluded from the average as an outlier (click to remove it entirely)'
       : isActive
-      ? 'Click para sacarla de tus prensas'
-      : 'Click para sumarla a tus prensas';
+      ? 'Click to remove it from your outlets'
+      : 'Click to add it to your outlets';
     chip.innerHTML = `
       <span class="chip-source">${review.source_name}</span>
       <span class="chip-score">${review.normalized_score.toFixed(0)}</span>
-      ${isOutlier ? '<span class="chip-flag">ATIPICA</span>' : ''}
+      ${isOutlier ? '<span class="chip-flag">OUTLIER</span>' : ''}
     `;
     chip.addEventListener('click', () => toggleSource(review.source_id, review.source_name));
     els.chips.appendChild(chip);

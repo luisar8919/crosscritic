@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>CrossCritic — tu redacción, tus pesos</title>
+<title>CrossCritic — your press, your weights</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;800;900&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -13,7 +13,7 @@
 
 <header class="masthead">
   <div class="masthead-mark">CROSSCRITIC</div>
-  <p class="masthead-tag">tu redacción, tus pesos — cada quien mezcla las notas en las que confía</p>
+  <p class="masthead-tag">your press, your weights — everyone blends the scores they trust</p>
 </header>
 
 <main class="deck">
@@ -21,21 +21,21 @@
   <section class="console-panel channels-panel" id="channels-panel">
     <details class="press-dropdown" id="press-dropdown">
       <summary class="press-summary">
-        <span class="panel-title press-summary-title">Tus prensas</span>
-        <span class="press-summary-count" id="press-summary-count">0 seleccionadas</span>
+        <span class="panel-title press-summary-title">Your Outlets</span>
+        <span class="press-summary-count" id="press-summary-count">0 selected</span>
       </summary>
-      <p class="panel-sub" id="channels-sub">Elige qué reseñas quieres usar para calcular la nota — se guarda en tu perfil y se aplica cada vez que busques un juego.</p>
+      <p class="panel-sub" id="channels-sub">Choose which reviews you want to use to calculate the score — it's saved to your profile and applied every time you search for a game.</p>
       <div id="channels" class="press-list"></div>
     </details>
   </section>
 
   <section class="search-strip">
-    <label for="game-search" class="visually-hidden">Buscar juego</label>
+    <label for="game-search" class="visually-hidden">Search game</label>
     <input
       id="game-search"
       type="text"
       list="game-list"
-      placeholder="Busca un juego reseñado…"
+      placeholder="Search a reviewed game…"
       autocomplete="off"
     />
     <datalist id="game-list"></datalist>
@@ -53,43 +53,43 @@
         <circle cx="120" cy="130" r="7" class="gauge-hub" />
       </svg>
       <div class="gauge-value" id="gauge-value">—</div>
-      <div class="gauge-caption">nota promedio</div>
+      <div class="gauge-caption">average score</div>
     </div>
 
     <div class="chips-toolbar">
-      <button type="button" id="outlier-toggle-btn" class="btn-ghost btn-toggle" aria-pressed="false">FILTRAR OUTLIERS</button>
-      <button type="button" id="select-all-btn" class="btn-ghost">+ SUMAR TODAS</button>
-      <button type="button" id="share-btn" class="btn-ghost">COMPARTIR IMAGEN</button>
-      <button type="button" id="copy-link-btn" class="btn-ghost">COPIAR LINK</button>
-      <a id="buy-link" class="btn-ghost btn-buy" href="#" target="_blank" rel="noopener sponsored" hidden>COMPRAR</a>
+      <button type="button" id="outlier-toggle-btn" class="btn-ghost btn-toggle" aria-pressed="false">FILTER OUTLIERS</button>
+      <button type="button" id="select-all-btn" class="btn-ghost">+ ADD ALL</button>
+      <button type="button" id="share-btn" class="btn-ghost">SHARE IMAGE</button>
+      <button type="button" id="copy-link-btn" class="btn-ghost">COPY LINK</button>
+      <a id="buy-link" class="btn-ghost btn-buy" href="#" target="_blank" rel="noopener sponsored" hidden>BUY</a>
     </div>
     <div id="chips" class="chips"></div>
-    <button type="button" id="load-more-btn" class="btn-ghost btn-load-more" hidden>VER MÁS PRENSAS</button>
-    <p id="empty-hint" class="empty-hint">Ninguna de tus prensas seleccionadas reseñó este juego todavía.</p>
+    <button type="button" id="load-more-btn" class="btn-ghost btn-load-more" hidden>SHOW MORE OUTLETS</button>
+    <p id="empty-hint" class="empty-hint">None of your selected outlets have reviewed this game yet.</p>
 
     <div class="compare-strip">
-      <label for="compare-search" class="visually-hidden">Comparar con otro juego</label>
+      <label for="compare-search" class="visually-hidden">Compare with another game</label>
       <input
         id="compare-search"
         type="text"
         list="game-list"
-        placeholder="Comparar con otro juego…"
+        placeholder="Compare with another game…"
         autocomplete="off"
       />
-      <button type="button" id="compare-clear-btn" class="btn-ghost" hidden>QUITAR COMPARACIÓN</button>
+      <button type="button" id="compare-clear-btn" class="btn-ghost" hidden>REMOVE COMPARISON</button>
     </div>
     <div id="compare-result" class="compare-result" hidden></div>
   </section>
 
   <section class="intro" id="intro">
-    <p>Elige tus prensas de confianza arriba y luego busca un juego para ver la nota calculada solo con esas reseñas.</p>
+    <p>Pick your trusted outlets above, then search for a game to see the score calculated only from those reviews.</p>
   </section>
 
 </main>
 
 <footer class="foot">
   <span id="api-status"></span>
-  <a id="kofi-link" class="kofi-link" href="https://ko-fi.com/TU_USUARIO_KOFI" target="_blank" rel="noopener">Invitame un café</a>
+  <a id="kofi-link" class="kofi-link" href="https://ko-fi.com/luisalvarez8919" target="_blank" rel="noopener">Buy me a coffee</a>
 </footer>
 
 <script src="app.js"></script>
