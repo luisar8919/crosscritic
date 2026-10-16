@@ -273,6 +273,16 @@ html, body {
   box-shadow: 0 0 14px rgba(0, 229, 255, 0.5);
 }
 
+.btn-buy {
+  border-color: var(--good);
+  color: var(--good);
+}
+
+.btn-buy:hover {
+  background: rgba(57, 255, 157, 0.12);
+  box-shadow: 0 0 14px rgba(57, 255, 157, 0.45);
+}
+
 .chips-toolbar {
   display: flex;
   justify-content: flex-end;
@@ -478,4 +488,17 @@ html, body {
   color: var(--muted);
   font-family: var(--font-mono);
   font-size: 0.72rem;
+}
+
+.kofi-link {
+  display: inline-block;
+  margin-top: 0.5rem;
+  color: var(--amber);
+  text-decoration: none;
+  border-bottom: 1px dashed var(--amber);
+}
+
+.kofi-link:hover {
+  color: var(--cream);
+  border-bottom-color: var(--cream);
 }

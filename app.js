@@ -12,6 +12,11 @@ const PROFILE_ID_KEY = 'crosscritic_profile_id';
 const RECENT_KEY = 'crosscritic_recent_searches';
 const MAX_RECENT = 8;
 
+// Tu id de afiliado de Instant Gaming Partners (parámetro "igr") — anotate
+// en https://www.instant-gaming.com/en/partners/ y pegalo acá. Sin esto el
+// botón COMPRAR igual funciona, solo que sin comisión para vos.
+const INSTANT_GAMING_AFFILIATE_TAG = '';
+
 const els = {
   search: document.getElementById('game-search'),
   gameList: document.getElementById('game-list'),
@@ -32,6 +37,7 @@ const els = {
   outlierToggleBtn: document.getElementById('outlier-toggle-btn'),
   shareBtn: document.getElementById('share-btn'),
   copyLinkBtn: document.getElementById('copy-link-btn'),
+  buyLink: document.getElementById('buy-link'),
   compareSearch: document.getElementById('compare-search'),
   compareClearBtn: document.getElementById('compare-clear-btn'),
   compareResult: document.getElementById('compare-result'),
@@ -688,7 +694,22 @@ function showGame() {
   compareGame = null;
   els.compareSearch.value = '';
   if (reconcileSourceNames(currentGame.reviews)) renderChannels();
+  updateBuyLink();
   renderReadout();
+}
+
+/** Link de afiliado a Instant Gaming para el juego que se está viendo —
+ * monetización simple sin backend propio: la URL de búsqueda ya alcanza,
+ * no hace falta resolver el producto exacto. */
+function updateBuyLink() {
+  if (!currentGame) {
+    els.buyLink.hidden = true;
+    return;
+  }
+  const query = encodeURIComponent(currentGame.game_title);
+  const ref = INSTANT_GAMING_AFFILIATE_TAG ? `&igr=${encodeURIComponent(INSTANT_GAMING_AFFILIATE_TAG)}` : '';
+  els.buyLink.href = `https://www.instant-gaming.com/en/search/?q=${query}${ref}`;
+  els.buyLink.hidden = false;
 }
 
 /** Un link compartido solo trae ids de prensa (ver applySharedLinkIfPresent);
