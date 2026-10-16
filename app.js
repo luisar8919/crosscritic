@@ -299,12 +299,25 @@ function onSearchInput() {
       Array.from(els.gameList.options)
         .filter((o) => o.dataset.metacriticSlug)
         .forEach((o) => o.remove());
-      (data.suggestions || []).forEach((s) => {
-        const opt = document.createElement('option');
-        opt.value = s.title;
-        opt.dataset.metacriticSlug = s.slug;
-        els.gameList.appendChild(opt);
-      });
+
+      // Si un título de Metacritic es idéntico a uno que ya está en tu
+      // cosecha local, no lo agregamos: dos <option> con el mismo texto
+      // visible eran ambiguos (el buscador siempre resolvía al primero que
+      // encontraba en el DOM, o sea siempre el local, sin que el usuario
+      // pudiera elegir el de Metacritic a propósito).
+      const localTitles = new Set(
+        Array.from(els.gameList.options)
+          .filter((o) => !o.dataset.metacriticSlug)
+          .map((o) => o.value)
+      );
+      (data.suggestions || [])
+        .filter((s) => !localTitles.has(s.title))
+        .forEach((s) => {
+          const opt = document.createElement('option');
+          opt.value = s.title;
+          opt.dataset.metacriticSlug = s.slug;
+          els.gameList.appendChild(opt);
+        });
     } catch {
       /* sin sugerencias, no pasa nada: igual se puede buscar a ciegas */
     }
