@@ -31,6 +31,7 @@ const els = {
   loadMoreBtn: document.getElementById('load-more-btn'),
   outlierToggleBtn: document.getElementById('outlier-toggle-btn'),
   shareBtn: document.getElementById('share-btn'),
+  copyLinkBtn: document.getElementById('copy-link-btn'),
   compareSearch: document.getElementById('compare-search'),
   compareClearBtn: document.getElementById('compare-clear-btn'),
   compareResult: document.getElementById('compare-result'),
@@ -77,6 +78,29 @@ async function init() {
   els.loadMoreBtn.addEventListener('click', loadMoreMetacriticReviews);
   els.outlierToggleBtn.addEventListener('click', toggleOutlierFilter);
   els.shareBtn.addEventListener('click', shareLink);
+  els.copyLinkBtn.addEventListener('click', copyShareLink);
+}
+
+/** Arma el mismo link que lee applySharedLinkIfPresent (?local=/mc=&title=&
+ * src=) y lo copia al portapapeles — para compartir la valoración exacta
+ * (juego + tu selección de prensas) con alguien, no solo una imagen. */
+function copyShareLink() {
+  if (!currentGame) return;
+  const params = new URLSearchParams();
+  if (currentGame.isMetacritic) params.set('mc', currentGame.metacriticSlug);
+  else params.set('local', currentGame.gameId);
+  params.set('title', currentGame.game_title);
+  params.set('src', btoa(encodeURIComponent(JSON.stringify(Array.from(selectedSources)))));
+
+  const url = `${location.origin}${location.pathname}?${params.toString()}`;
+  navigator.clipboard
+    .writeText(url)
+    .then(() => {
+      els.searchStatus.textContent = 'Link copiado — al abrirlo se ve el mismo juego con tu misma selección de prensas.';
+    })
+    .catch(() => {
+      els.searchStatus.textContent = url;
+    });
 }
 
 /** Link compartible: ?local=<id>|mc=<slug>&title=<titulo>&src=<prensas en
