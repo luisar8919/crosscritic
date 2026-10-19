@@ -28,6 +28,7 @@ const els = {
   channelsSub: document.getElementById('channels-sub'),
   pressSummaryCount: document.getElementById('press-summary-count'),
   gameTitle: document.getElementById('game-title'),
+  gameCover: document.getElementById('game-cover'),
   gaugeFill: document.getElementById('gauge-fill'),
   gaugeNeedle: document.getElementById('gauge-needle'),
   gaugeValue: document.getElementById('gauge-value'),
@@ -367,6 +368,7 @@ async function fetchMetacriticGame(title, slug) {
     metacriticSlug: data.metacritic_slug,
     nextOffset: data.next_offset,
     totalAvailable: data.total_available,
+    coverImage: data.cover_image || null,
   };
 }
 
@@ -691,6 +693,13 @@ function showGame() {
   els.intro.hidden = true;
   els.console.hidden = false;
   els.gameTitle.textContent = currentGame.game_title;
+  if (currentGame.coverImage) {
+    els.gameCover.src = currentGame.coverImage;
+    els.gameCover.alt = currentGame.game_title;
+    els.gameCover.hidden = false;
+  } else {
+    els.gameCover.hidden = true;
+  }
   compareGame = null;
   els.compareSearch.value = '';
   if (reconcileSourceNames(currentGame.reviews)) renderChannels();
