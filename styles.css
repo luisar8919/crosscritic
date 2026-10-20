@@ -268,11 +268,6 @@ html, body {
   box-shadow: none;
 }
 
-.btn-toggle[aria-pressed="true"] {
-  background: rgba(0, 229, 255, 0.18);
-  box-shadow: 0 0 14px rgba(0, 229, 255, 0.5);
-}
-
 .btn-buy {
   border-color: var(--good);
   color: var(--good);
@@ -283,11 +278,43 @@ html, body {
   box-shadow: 0 0 14px rgba(57, 255, 157, 0.45);
 }
 
+/* Botones de accion (filtrar/sumar/compartir/copiar): en ambar, para que
+   no se confundan a simple vista con los chips de nota por prensa (esos
+   quedan en cobalto). BUY ya tiene su propio verde, queda como esta. */
+.btn-action {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
+.btn-action:hover {
+  background: rgba(255, 204, 51, 0.12);
+  box-shadow: 0 0 14px rgba(255, 204, 51, 0.45);
+}
+
+.btn-action.btn-toggle[aria-pressed="true"] {
+  background: rgba(255, 204, 51, 0.18);
+  box-shadow: 0 0 14px rgba(255, 204, 51, 0.5);
+}
+
 .chips-toolbar {
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
+  flex-wrap: wrap;
   gap: 0.6rem;
-  margin-bottom: 0.75rem;
+  margin: 1.5rem 0 1.25rem;
+}
+
+.chips-heading {
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--line);
 }
 
 .btn-load-more {
