@@ -361,19 +361,36 @@ html, body {
   flex-shrink: 0;
   width: 150px;
   height: 210px;
-}
-
-.game-cover {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
   border-radius: 2px;
+  background: var(--panel-raised);
   border: 1px solid var(--cover-glow, var(--cobalt));
   box-shadow:
     0 0 22px color-mix(in srgb, var(--cover-glow, var(--cobalt)) 55%, transparent),
     0 10px 28px rgba(0, 0, 0, 0.5);
   transition: border-color 0.4s ease, box-shadow 0.4s ease;
+}
+
+/* Versión borrosa de la misma portada, agrandada para rellenar el marco
+   sin recortar ni deformar la imagen real que va encima. */
+.game-cover-backdrop {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  filter: blur(16px) brightness(0.55) saturate(1.1);
+  transform: scale(1.3);
+}
+
+.game-cover {
+  position: relative;
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
 }
 
 .game-cover-frame::before {
@@ -390,8 +407,7 @@ html, body {
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: 2px;
-  background: linear-gradient(180deg, transparent 60%, rgba(10, 14, 22, 0.75) 100%);
+  background: linear-gradient(180deg, transparent 70%, rgba(10, 14, 22, 0.55) 100%);
   pointer-events: none;
 }
 

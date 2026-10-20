@@ -30,6 +30,7 @@ const els = {
   gameTitle: document.getElementById('game-title'),
   gameCover: document.getElementById('game-cover'),
   gameCoverFrame: document.getElementById('game-cover-frame'),
+  gameCoverBackdrop: document.getElementById('game-cover-backdrop'),
   gaugeFill: document.getElementById('gauge-fill'),
   gaugeNeedle: document.getElementById('gauge-needle'),
   gaugeValue: document.getElementById('gauge-value'),
@@ -697,6 +698,7 @@ function showGame() {
   if (currentGame.coverImage) {
     els.gameCover.src = currentGame.coverImage;
     els.gameCover.alt = currentGame.game_title;
+    els.gameCoverBackdrop.style.backgroundImage = `url("${currentGame.coverImage}")`;
     els.gameCoverFrame.hidden = false;
   } else {
     els.gameCoverFrame.hidden = true;
