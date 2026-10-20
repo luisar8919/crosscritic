@@ -370,6 +370,7 @@ async function fetchMetacriticGame(title, slug) {
     nextOffset: data.next_offset,
     totalAvailable: data.total_available,
     coverImage: data.cover_image || null,
+    source: data.source || 'metacritic',
   };
 }
 
@@ -693,7 +694,9 @@ function computeOutliers(activeReviews) {
 
 function showGame() {
   els.searchStatus.textContent = currentGame.isMetacritic
-    ? 'Metacritic result (beta) — click an outlet to add it to your selection.'
+    ? currentGame.source === 'opencritic'
+      ? 'Metacritic is unavailable right now — showing OpenCritic data instead.'
+      : 'Metacritic result (beta) — click an outlet to add it to your selection.'
     : '';
   els.intro.hidden = true;
   els.console.hidden = false;
