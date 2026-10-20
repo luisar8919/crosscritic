@@ -348,6 +348,42 @@ html, body {
 
 /* ---------- Cover banner ---------- */
 
+.readout-hero {
+  position: relative;
+}
+
+/* Con portada: el título flota arriba a la izquierda de la imagen y el
+   medidor se monta arriba a la derecha, superpuesto sobre el banner (en
+   vez de ir cada uno en su propio bloque debajo). Sin portada, ambos
+   quedan en el flujo normal de siempre. */
+.readout-hero:has(.game-cover-frame:not([hidden])) .panel-title {
+  position: absolute;
+  top: 0.85rem;
+  left: 0.85rem;
+  z-index: 2;
+  max-width: 60%;
+  margin: 0;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.9), 0 0 18px rgba(0, 0, 0, 0.7);
+}
+
+.readout-hero:has(.game-cover-frame:not([hidden])) .gauge-wrap {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 2;
+  width: 190px;
+  padding: 0;
+}
+
+.readout-hero:has(.game-cover-frame:not([hidden])) .gauge {
+  max-width: 190px;
+}
+
+.readout-hero:has(.game-cover-frame:not([hidden])) .gauge-value,
+.readout-hero:has(.game-cover-frame:not([hidden])) .gauge-caption {
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
+}
+
 .game-cover-frame {
   position: relative;
   width: 100%;
