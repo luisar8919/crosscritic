@@ -15,7 +15,7 @@ const MAX_RECENT = 8;
 // Tu id de afiliado de Instant Gaming Partners (parámetro "igr") — anotate
 // en https://www.instant-gaming.com/en/partners/ y pegalo acá. Sin esto el
 // botón COMPRAR igual funciona, solo que sin comisión para vos.
-const INSTANT_GAMING_AFFILIATE_TAG = '';
+const INSTANT_GAMING_AFFILIATE_TAG = 'gamer-820b6a8';
 
 const els = {
   search: document.getElementById('game-search'),
