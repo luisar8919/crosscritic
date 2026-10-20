@@ -356,14 +356,43 @@ html, body {
   flex-wrap: wrap;
 }
 
+.game-cover-frame {
+  position: relative;
+  flex-shrink: 0;
+  width: 150px;
+  height: 210px;
+}
+
 .game-cover {
-  width: 140px;
-  height: 187px;
+  display: block;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
   border-radius: 2px;
-  border: 1px solid var(--line);
-  box-shadow: 0 0 16px rgba(0, 0, 0, 0.4);
-  flex-shrink: 0;
+  border: 1px solid var(--cover-glow, var(--cobalt));
+  box-shadow:
+    0 0 22px color-mix(in srgb, var(--cover-glow, var(--cobalt)) 55%, transparent),
+    0 10px 28px rgba(0, 0, 0, 0.5);
+  transition: border-color 0.4s ease, box-shadow 0.4s ease;
+}
+
+.game-cover-frame::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border: 1px solid transparent;
+  border-image: linear-gradient(135deg, var(--cover-glow, var(--cobalt)), transparent 50%) 1;
+  pointer-events: none;
+  transition: border-image 0.4s ease;
+}
+
+.game-cover-frame::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 2px;
+  background: linear-gradient(180deg, transparent 60%, rgba(10, 14, 22, 0.75) 100%);
+  pointer-events: none;
 }
 
 .gauge-wrap {

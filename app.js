@@ -29,6 +29,7 @@ const els = {
   pressSummaryCount: document.getElementById('press-summary-count'),
   gameTitle: document.getElementById('game-title'),
   gameCover: document.getElementById('game-cover'),
+  gameCoverFrame: document.getElementById('game-cover-frame'),
   gaugeFill: document.getElementById('gauge-fill'),
   gaugeNeedle: document.getElementById('gauge-needle'),
   gaugeValue: document.getElementById('gauge-value'),
@@ -696,9 +697,9 @@ function showGame() {
   if (currentGame.coverImage) {
     els.gameCover.src = currentGame.coverImage;
     els.gameCover.alt = currentGame.game_title;
-    els.gameCover.hidden = false;
+    els.gameCoverFrame.hidden = false;
   } else {
-    els.gameCover.hidden = true;
+    els.gameCoverFrame.hidden = true;
   }
   compareGame = null;
   els.compareSearch.value = '';
@@ -798,6 +799,7 @@ function updateGauge(score) {
   else if (clamped >= 40) color = 'var(--amber)';
   els.gaugeFill.style.stroke = color;
   els.gaugeValue.style.color = color;
+  els.gameCoverFrame.style.setProperty('--cover-glow', color);
 }
 
 function setApiStatus(message) {
