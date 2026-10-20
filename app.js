@@ -30,7 +30,6 @@ const els = {
   gameTitle: document.getElementById('game-title'),
   gameCover: document.getElementById('game-cover'),
   gameCoverFrame: document.getElementById('game-cover-frame'),
-  gameCoverBackdrop: document.getElementById('game-cover-backdrop'),
   gaugeFill: document.getElementById('gauge-fill'),
   gaugeNeedle: document.getElementById('gauge-needle'),
   gaugeValue: document.getElementById('gauge-value'),
@@ -603,28 +602,32 @@ function wrapCenteredText(ctx, text, x, y, maxWidth, lineHeight) {
   lines.forEach((l, i) => ctx.fillText(l, x, startY + i * lineHeight));
 }
 
-/** Trae la siguiente tanda de reseñas de Metacritic (hay hasta 150+ por
- * juego, solo mostramos ~20 al principio) y las suma sin pisar las ya
- * mostradas. */
+/** Trae TODAS las reseñas de Metacritic que falten (hay hasta 150+ por
+ * juego, solo mostramos ~20 al principio) en una sola tanda de clicks —
+ * cada request trae una página más hasta que no queda nada pendiente. */
 async function loadMoreMetacriticReviews() {
   if (!currentGame?.isMetacritic) return;
   els.loadMoreBtn.disabled = true;
   els.loadMoreBtn.textContent = 'LOADING...';
   try {
-    const res = await fetch(
-      `${API_BASE}/metacritic?slug=${encodeURIComponent(currentGame.metacriticSlug)}&offset=${currentGame.nextOffset}`
-    );
-    const data = await res.json();
-    currentGame.reviews = currentGame.reviews.concat(data.reviews || []);
-    currentGame.nextOffset = data.next_offset;
-    currentGame.totalAvailable = data.total_available;
+    while (currentGame.nextOffset < (currentGame.totalAvailable || 0)) {
+      const res = await fetch(
+        `${API_BASE}/metacritic?slug=${encodeURIComponent(currentGame.metacriticSlug)}&offset=${currentGame.nextOffset}`
+      );
+      const data = await res.json();
+      const newReviews = data.reviews || [];
+      if (!newReviews.length) break; // corta si el backend no devuelve nada, evita loop infinito
+      currentGame.reviews = currentGame.reviews.concat(newReviews);
+      currentGame.nextOffset = data.next_offset;
+      currentGame.totalAvailable = data.total_available;
+    }
     renderReadout();
   } catch {
     updateLoadMoreButton();
   }
 }
 
-/** Botón "ver más": oculto para juegos locales (no hay paginación), y
+/** Botón "ver todas": oculto para juegos locales (no hay paginación), y
  * desactivado (no escondido) una vez que ya se vieron todas las prensas
  * disponibles de Metacritic. */
 function updateLoadMoreButton() {
@@ -633,7 +636,7 @@ function updateLoadMoreButton() {
   );
   els.loadMoreBtn.hidden = !currentGame?.isMetacritic;
   els.loadMoreBtn.disabled = !hasMore;
-  els.loadMoreBtn.textContent = hasMore ? 'SHOW MORE OUTLETS' : 'ALL OUTLETS SHOWN';
+  els.loadMoreBtn.textContent = hasMore ? 'SHOW ALL' : 'ALL OUTLETS SHOWN';
 }
 
 /** Un solo botón que suma todas las prensas del juego que estás viendo a tu
@@ -698,7 +701,6 @@ function showGame() {
   if (currentGame.coverImage) {
     els.gameCover.src = currentGame.coverImage;
     els.gameCover.alt = currentGame.game_title;
-    els.gameCoverBackdrop.style.backgroundImage = `url("${currentGame.coverImage}")`;
     els.gameCoverFrame.hidden = false;
   } else {
     els.gameCoverFrame.hidden = true;

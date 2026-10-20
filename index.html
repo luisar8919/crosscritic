@@ -45,21 +45,18 @@
 
   <section class="console-panel readout-panel" id="console" hidden>
     <h2 class="panel-title" id="game-title">—</h2>
-    <div class="readout-head">
-      <div id="game-cover-frame" class="game-cover-frame" hidden>
-        <div id="game-cover-backdrop" class="game-cover-backdrop"></div>
-        <img id="game-cover" class="game-cover" alt="" />
-      </div>
-      <div class="gauge-wrap">
-        <svg id="gauge" viewBox="0 0 240 150" class="gauge">
-          <path d="M 20 130 A 100 100 0 0 1 220 130" class="gauge-track" />
-          <path id="gauge-fill" d="M 20 130 A 100 100 0 0 1 220 130" class="gauge-fill" />
-          <line id="gauge-needle" x1="120" y1="130" x2="120" y2="40" class="gauge-needle" />
-          <circle cx="120" cy="130" r="7" class="gauge-hub" />
-        </svg>
-        <div class="gauge-value" id="gauge-value">—</div>
-        <div class="gauge-caption">average score</div>
-      </div>
+    <div id="game-cover-frame" class="game-cover-frame" hidden>
+      <img id="game-cover" class="game-cover" alt="" />
+    </div>
+    <div class="gauge-wrap">
+      <svg id="gauge" viewBox="0 0 240 150" class="gauge">
+        <path d="M 20 130 A 100 100 0 0 1 220 130" class="gauge-track" />
+        <path id="gauge-fill" d="M 20 130 A 100 100 0 0 1 220 130" class="gauge-fill" />
+        <line id="gauge-needle" x1="120" y1="130" x2="120" y2="40" class="gauge-needle" />
+        <circle cx="120" cy="130" r="7" class="gauge-hub" />
+      </svg>
+      <div class="gauge-value" id="gauge-value">—</div>
+      <div class="gauge-caption">average score</div>
     </div>
 
     <div class="chips-toolbar">
@@ -70,7 +67,7 @@
       <a id="buy-link" class="btn-ghost btn-buy" href="#" target="_blank" rel="noopener sponsored" hidden>BUY</a>
     </div>
     <div id="chips" class="chips"></div>
-    <button type="button" id="load-more-btn" class="btn-ghost btn-load-more" hidden>SHOW MORE OUTLETS</button>
+    <button type="button" id="load-more-btn" class="btn-ghost btn-load-more" hidden>SHOW ALL</button>
     <p id="empty-hint" class="empty-hint">None of your selected outlets have reviewed this game yet.</p>
 
     <div class="compare-strip">
