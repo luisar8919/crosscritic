@@ -62,6 +62,8 @@ let filterOutliersEnabled = false;
 init();
 
 async function init() {
+  if (await redirectIfShortLink()) return; // location.replace() ya en curso, no sigas inicializando esta carga
+
   profileId = getOrCreateProfileId();
   loadRecent();
 
@@ -90,15 +92,16 @@ async function init() {
 }
 
 /** Arma el mismo link que lee applySharedLinkIfPresent (?local=/mc=&title=&
- * src=) y lo copia al portapapeles — para compartir la valoración exacta
- * (juego + tu selección de prensas) con alguien, no solo una imagen.
+ * src=), lo acorta vía el backend (/s/<code> en vez de la URL completa) y
+ * lo copia al portapapeles — para compartir la valoración exacta (juego +
+ * tu selección de prensas) con alguien, no solo una imagen.
  *
  * `src` solo lleva los ids de las prensas ACTIVAS en este juego (no todo tu
  * perfil acumulado): eso es lo que realmente determina la nota que estás
- * viendo, y mantiene el link corto — perfiles viejos con decenas de prensas
- * sumadas de otros juegos tiraban un link tan largo que el navegador lo
- * rechazaba (Request Too Long). */
-function copyShareLink() {
+ * viendo, y mantiene el link de origen corto — perfiles viejos con decenas
+ * de prensas sumadas de otros juegos tiraban un link tan largo que el
+ * navegador lo rechazaba (Request Too Long). */
+async function copyShareLink() {
   if (!currentGame) return;
   const activeIds = (currentGame.reviews || [])
     .map((r) => r.source_id)
@@ -110,7 +113,9 @@ function copyShareLink() {
   params.set('title', currentGame.game_title);
   params.set('src', activeIds.join(','));
 
-  const url = `${location.origin}${location.pathname}?${params.toString()}`;
+  const fullUrl = `${location.origin}${location.pathname}?${params.toString()}`;
+  const url = await shortenUrl(fullUrl);
+
   navigator.clipboard
     .writeText(url)
     .then(() => {
@@ -119,6 +124,45 @@ function copyShareLink() {
     .catch(() => {
       els.searchStatus.textContent = url;
     });
+}
+
+/** Pide un código corto para `fullUrl` al backend (/s/<code>). Si falla
+ * (red, backend caído) devuelve el link completo sin acortar en vez de
+ * bloquear el compartir — un link largo que funciona es mejor que nada. */
+async function shortenUrl(fullUrl) {
+  try {
+    const res = await fetch(`${API_BASE}/shorten`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: fullUrl }),
+    });
+    if (!res.ok) return fullUrl;
+    const data = await res.json();
+    return data.code ? `${location.origin}/s/${data.code}` : fullUrl;
+  } catch {
+    return fullUrl;
+  }
+}
+
+/** Si la URL actual es /s/<code>, resuelve el link completo contra el
+ * backend y redirige ahí (location.replace, no deja el link corto en el
+ * historial). Devuelve true si disparó la redirección — en ese caso init()
+ * no debe seguir inicializando esta carga de página, la que viene después
+ * de la redirección se encarga. Si el código no existe/vencio, sigue de
+ * largo con la carga normal de la app (sin juego precargado). */
+async function redirectIfShortLink() {
+  const match = location.pathname.match(/^\/s\/([A-Za-z0-9]{4,12})$/);
+  if (!match) return false;
+  try {
+    const res = await fetch(`${API_BASE}/shorten/${encodeURIComponent(match[1])}`);
+    if (!res.ok) return false;
+    const data = await res.json();
+    if (!data.url) return false;
+    location.replace(data.url);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /** Link compartible: ?local=<id>|mc=<slug>&title=<titulo>&src=<ids separados
