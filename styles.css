@@ -617,3 +617,26 @@ html, body {
   color: var(--cream);
   border-bottom-color: var(--cream);
 }
+
+.kofi-badge {
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 2px;
+  background: var(--panel);
+  border: 1px solid var(--amber);
+  color: var(--amber);
+  box-shadow: 0 0 14px rgba(255, 204, 51, 0.35);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.kofi-badge:hover {
+  box-shadow: 0 0 20px rgba(255, 204, 51, 0.6);
+  transform: translateY(-1px);
+}
